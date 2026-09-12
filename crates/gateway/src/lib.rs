@@ -71,7 +71,9 @@ async fn health() -> impl IntoResponse {
 }
 
 async fn version(State(st): State<Arc<AppState>>) -> impl IntoResponse {
-    Json(serde_json::json!({"version": st.version, "upstream": "0.5.75"}))
+    Json(
+        serde_json::json!({"version": st.version, "currentVersion": st.version, "latestVersion": "0.5.75", "hasUpdate": false, "upstream": "0.5.75"}),
+    )
 }
 
 async fn init() -> impl IntoResponse {
@@ -154,7 +156,11 @@ fn require_auth(headers: &HeaderMap) -> Option<Response> {
     if headers.contains_key("authorization") {
         None
     } else {
-        Some(err_inner(401, "missing authorization", "auth_error"))
+        Some(err_inner(
+            401,
+            "missing authorization",
+            "authentication_error",
+        ))
     }
 }
 
@@ -188,7 +194,7 @@ async fn map_upstream_err(status: u16, resp: reqwest::Response) -> Response {
         .unwrap_or(trunc);
     let typ = match status {
         400 => "invalid_request_error",
-        401 => "auth_error",
+        401 => "authentication_error",
         403 => "permission_error",
         404 => "not_found_error",
         408 => "timeout_error",
