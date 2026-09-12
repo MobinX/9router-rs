@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "bad key",
+    "type": "auth_error"
+  }
+}

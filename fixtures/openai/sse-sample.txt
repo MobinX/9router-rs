@@ -1,0 +1,4 @@
+data: {"id":"req_1","object":"chat.completion.chunk","choices":[{"delta":{"content":"hi"}}]}
+
+data: [DONE]
+
