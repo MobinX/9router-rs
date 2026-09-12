@@ -21,3 +21,11 @@ Totals: discovered ~192 routes, 143 providers, 9 oauth flows, 11 tables. Fully t
 - Upstream forwarding with provider-prefix routing, SSE byte passthrough, x-request-id, error schema {error:{message,type}}, 408/429/5xx fallback, timeouts (504), 4xx fail-fast.
 - Tests: 27 pass (21 unit + 6 mock-upstream proxy); clippy -D warnings clean; fmt clean.
 - Wiring: NINE_UPSTREAM_URL / NINE_UPSTREAM_KEY / TIMEOUT_MS. Storage-backed connections + usage logging deferred to Phase 4/6.
+
+## Phase 4 (provider adapters) — done
+
+- providers crate: ApiStyle/auth_spec/auth_headers/chat_url, model catalog loader, OpenAI+Anthropic+Gemini request adapters, response translation (stop reasons, tool_calls, usage), SSE translation for Anthropic and Gemini.
+- gateway: real `/v1/models`, `/v1/models/info`, `/v1beta/models`, `/v1beta/models/*:generateContent`, `/v1/messages`; auth via apiKeys (open_mode for dev) with `{error:{message,type,code}}`; provider-prefix routing + fallback loop.
+- Tests: 49 pass (8 adapter mock-integration incl. streaming + errors; 11 gateway; 11 providers; routing/config/storage/core).
+- clippy `-D warnings` clean, fmt clean.
+- Deferred: `/v1/responses` (501 stub), embeddings/audio/images/video/search media endpoints, connections from DB (Phase 6), differential parity for model count (needs connections).

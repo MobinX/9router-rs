@@ -13,6 +13,8 @@ tower-http.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 reqwest.workspace = true
+futures-util.workspace = true
+tokio-stream.workspace = true
 nine-core = { path = "../core" }
 nine-config = { path = "../config" }
 nine-storage = { path = "../storage" }
@@ -21,3 +23,4 @@ nine-oauth = { path = "../oauth" }
 nine-routing = { path = "../routing" }
 [dev-dependencies]
 tower.workspace = true
+

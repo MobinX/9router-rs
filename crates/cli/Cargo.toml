@@ -15,4 +15,6 @@ serde_json.workspace = true
 nine-core = { path = "../core" }
 nine-config = { path = "../config" }
 nine-storage = { path = "../storage" }
+nine-providers = { path = "../providers" }
 nine-gateway = { path = "../gateway" }
+rusqlite.workspace = true

@@ -206,3 +206,13 @@ Discovered Next.js route dirs under `.next-cli-build/server/app/api`. Rewrites: 
 - `POST /api/v1/embeddings`, `/api/v1/audio/*`, `/api/v1/images/generations`, `/api/v1/videos/*`, `/api/v1/search`, `/api/v1/web/fetch`, `/api/v1/api/chat`
 - `/api/v1beta/models*` Gemini passthrough
 - `GET /api/health`, `/api/version`, `/api/init`, `/api/auth/*`, `/api/keys*`, `/api/providers*`, `/api/oauth/*`, `/api/usage/*`, `/api/settings`, `/api/mcp/*`
+
+## Phase 4 verified shapes (live original, 2026-09-12)
+
+- `GET /v1/models` (public): `{object:"list", data:[{id:"<provider>/<model>", object:"model", owned_by, capabilities?, context_length?, max_completion_tokens?}]}`
+- `GET /v1/models/info?id=<provider>/<model>`: 400 without id (`invalid_request_error`), else `{id,name,kind,owned_by,endpoint}`
+- `GET /v1beta/models?key=` (public): `{models:[{name:"models/<provider>/<model>", displayName, description, supportedGenerationMethods, inputTokenLimit, outputTokenLimit}]}`
+- `POST /v1beta/models/{provider}/{model}:generateContent`: auth via `?key=`/`x-goog-api-key`/Bearer; 401 `{error:{message:"Missing API key",type:"authentication_error",code:"invalid_api_key"}}`
+- `POST /v1/messages`: Anthropic native in/out; 401 body has `code:invalid_api_key`
+- `POST /v1/chat/completions`: OpenAI shape out for all styles (anthropic/gemini translated)
+- Auth error envelope everywhere: `{error:{message,type,code}}`

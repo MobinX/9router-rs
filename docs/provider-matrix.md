@@ -147,3 +147,13 @@ Auth/API/BaseURL/transforms reverse-engineered per-adapter during Phase 4. Regis
 | `xquik` | api-key | openai-or-native | providers::registry | [ ] Discovered |
 | `youcom` | api-key | openai-or-native | providers::registry | [ ] Discovered |
 | `zed` | oauth/subscription | openai-or-native | providers::registry | [ ] Discovered |
+
+## Phase 4 adapter status
+
+Implemented + tested (mock upstream + translation):
+- `openai` — Bearer, `{base}/chat/completions`, pass-through JSON/SSE
+- `anthropic` — x-api-key + anthropic-version, `{base}/messages`, system-split request, tool_use + stop_reason + usage translation, SSE→OpenAI chunk translation
+- `gemini` — x-goog-api-key, `{base}/models/{model}:generateContent`, parts/finishReason/usageMetadata translation, SSE→OpenAI chunk translation
+- Fallback order = provider-prefix match first, then configured connections; 408/429/5xx retry, 4xx fail-fast, timeout 504
+
+Still open (documented): per-provider special headers/transforms for the remaining ~140 ids, embeddings/audio/images/video/search/web adapters, storage-backed connections.
