@@ -950,6 +950,10 @@ fn authorize(
     headers: &HeaderMap,
     query: Option<&std::collections::HashMap<String, String>>,
 ) -> Option<Response> {
+    // Local mode (original: requireApiKey=false): no credential needed at all.
+    if st.open_mode {
+        return None;
+    }
     let cred = extract_credential(headers, query);
     match cred {
         None => Some(err(
@@ -959,7 +963,7 @@ fn authorize(
             "invalid_api_key",
         )),
         Some(k) => {
-            if st.open_mode || st.api_keys.iter().any(|x| x == &k) {
+            if st.api_keys.iter().any(|x| x == &k) {
                 None
             } else {
                 Some(err(

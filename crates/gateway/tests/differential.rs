@@ -286,3 +286,22 @@ async fn diff_health_version_keys() {
         assert!(v2.get(k).is_some(), "version missing {k}: {v2}");
     }
 }
+
+#[tokio::test]
+async fn diff_open_mode_needs_no_credential() {
+    // Original with requireApiKey=false serves without any key ("local mode").
+    let app = Router::new().route("/o/chat/completions", axum::routing::post(|| async {
+        axum::Json(serde_json::json!({
+            "id": "chatcmpl-open", "object": "chat.completion", "created": 1, "model": "bench",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": "hi"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }))
+    }));
+    let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://127.0.0.1:{}", l.local_addr().unwrap().port());
+    tokio::spawn(async move { axum::serve(l, app).await.unwrap() });
+    let gw = router_with_state(AppState::new(vec![up("openai", base, "o")], 5_000));
+    let (s, _, v, _) = call(gw, chat_req(r#"{"model":"bench","messages":[]}"#, None)).await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(v["id"], "chatcmpl-open");
+}
