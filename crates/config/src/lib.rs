@@ -7,6 +7,7 @@ pub struct Settings {
     pub no_browser: bool,
     pub data_dir: String,
     pub log_level: String,
+    pub timeout_ms: u64,
 }
 
 impl Default for Settings {
@@ -21,6 +22,10 @@ impl Default for Settings {
             no_browser: false,
             data_dir: format!("{home}/.9router"),
             log_level: std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()),
+            timeout_ms: std::env::var("TIMEOUT_MS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(30_000),
         }
     }
 }

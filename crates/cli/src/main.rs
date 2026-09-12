@@ -44,7 +44,19 @@ async fn main() {
         Some(Cmd::Serve { port }) => port.unwrap_or(cli.port),
         _ => cli.port,
     };
-    let app = nine_gateway::router();
+    let settings = nine_config::Settings::default();
+    let mut upstreams = Vec::new();
+    if let Ok(url) = std::env::var("NINE_UPSTREAM_URL") {
+        upstreams.push(nine_gateway::Upstream {
+            provider: "openai",
+            base_url: url,
+            api_key: std::env::var("NINE_UPSTREAM_KEY").unwrap_or_default(),
+        });
+    }
+    let app = nine_gateway::router_with_state(nine_gateway::AppState::new(
+        upstreams,
+        settings.timeout_ms,
+    ));
     let addr = format!("{}:{}", cli.host, port);
     let listener = tokio::net::TcpListener::bind(&addr).await.expect("bind");
     println!("9router-rs listening on {addr}");

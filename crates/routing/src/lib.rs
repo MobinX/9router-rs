@@ -26,6 +26,12 @@ pub fn pick_connection(conns: &[Connection]) -> Option<&Connection> {
         .or_else(|| sorted.into_iter().next())
 }
 
+/// Retryable upstream statuses: timeouts, rate limits, server errors.
+/// Client errors (except 408/429) fail fast with no fallback.
+pub fn should_retry(status: u16) -> bool {
+    status == 408 || status == 429 || (500..600).contains(&status)
+}
+
 /// Round-robin index helper (wrapping).
 pub fn round_robin(conns: &[Connection], cursor: usize) -> Option<(usize, &Connection)> {
     if conns.is_empty() {
@@ -65,6 +71,15 @@ mod tests {
         )]);
         assert_eq!(resolve_alias("fast", &m), "openai/gpt-4o-mini");
         assert_eq!(resolve_alias("other", &m), "other");
+    }
+    #[test]
+    fn retry_set() {
+        for s in [200, 201, 400, 401, 403, 404] {
+            assert!(!should_retry(s), "{s} must not retry");
+        }
+        for s in [408, 429, 500, 502, 503, 504] {
+            assert!(should_retry(s), "{s} must retry");
+        }
     }
     #[test]
     fn rr_wraps() {
