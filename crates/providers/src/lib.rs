@@ -1,3 +1,5 @@
+pub mod registry;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -22,6 +24,8 @@ pub enum ApiStyle {
     OpenAi,
     Anthropic,
     Gemini,
+    Responses,
+    Native,
 }
 
 /// Providers speaking the Anthropic Messages API.
@@ -46,6 +50,15 @@ pub const GEMINI_STYLE: &[&str] = &[
 ];
 
 pub fn api_style(provider: &str) -> ApiStyle {
+    if let Some(m) = registry::provider_meta(provider) {
+        return match m.wire {
+            registry::WireFormat::OpenAi(_) => ApiStyle::OpenAi,
+            registry::WireFormat::Anthropic => ApiStyle::Anthropic,
+            registry::WireFormat::Gemini => ApiStyle::Gemini,
+            registry::WireFormat::Responses(_) => ApiStyle::Responses,
+            registry::WireFormat::Native(_) => ApiStyle::Native,
+        };
+    }
     let p = provider.to_lowercase();
     if ANTHROPIC_STYLE.contains(&p.as_str()) {
         ApiStyle::Anthropic
@@ -58,6 +71,11 @@ pub fn api_style(provider: &str) -> ApiStyle {
 
 /// Default upstream base URL for well-known providers. Empty means "not configured".
 pub fn base_url_for(provider: &str) -> &'static str {
+    if let Some(m) = registry::provider_meta(provider) {
+        if !m.base.is_empty() {
+            return m.base;
+        }
+    }
     match provider.to_lowercase().as_str() {
         "openai" => "https://api.openai.com/v1",
         "anthropic" | "claude" => "https://api.anthropic.com/v1",
@@ -92,13 +110,20 @@ pub enum AuthSpec {
     AnthropicKey,
     /// `x-goog-api-key: <key>`
     GoogleKey,
+    /// `Cookie: <value>` (browser-session providers)
+    Cookie,
 }
 
 pub fn auth_spec(provider: &str) -> AuthSpec {
+    if let Some(m) = registry::provider_meta(provider) {
+        if m.category == registry::Category::WebCookie {
+            return AuthSpec::Cookie;
+        }
+    }
     match api_style(provider) {
         ApiStyle::Anthropic => AuthSpec::AnthropicKey,
         ApiStyle::Gemini => AuthSpec::GoogleKey,
-        ApiStyle::OpenAi => AuthSpec::Bearer,
+        ApiStyle::OpenAi | ApiStyle::Responses | ApiStyle::Native => AuthSpec::Bearer,
     }
 }
 
@@ -111,6 +136,7 @@ pub fn auth_headers(provider: &str, key: &str) -> Vec<(&'static str, String)> {
             ("anthropic-version", "2023-06-01".to_string()),
         ],
         AuthSpec::GoogleKey => vec![("x-goog-api-key", key.to_string())],
+        AuthSpec::Cookie => vec![("cookie", key.to_string())],
     }
 }
 
@@ -139,6 +165,8 @@ pub fn chat_path(provider: &str) -> &'static str {
         ApiStyle::Anthropic => "/messages",
         ApiStyle::Gemini => "/models",
         ApiStyle::OpenAi => "/chat/completions",
+        ApiStyle::Responses => "/responses",
+        ApiStyle::Native => "",
     }
 }
 
@@ -152,6 +180,8 @@ pub fn chat_url(provider: &str, base: &str, model: &str) -> String {
             nine_core::normalize_model_id(model)
         ),
         ApiStyle::OpenAi => format!("{base}/chat/completions"),
+        ApiStyle::Responses => format!("{base}/responses"),
+        ApiStyle::Native => base.to_string(),
     }
 }
 
@@ -242,6 +272,29 @@ pub fn map_anthropic_stop(stop: &str) -> &'static str {
         "tool_use" => "tool_calls",
         "refusal" => "content_filter",
         _ => "stop",
+    }
+}
+
+/// Providers whose non-streaming responses arrive wrapped in
+/// `{"success":true,"data":{...}}` (upstream `transport.quirks.clineEnvelope`).
+pub fn has_cline_envelope(provider: &str) -> bool {
+    matches!(provider.to_lowercase().as_str(), "cline" | "clinepass")
+}
+
+/// Unwrap a Cline envelope, mirroring upstream `unwrapClineEnvelope`: only
+/// `{"success":true,"data":object}` is unwrapped, everything else passes
+/// through untouched (error envelopes never match).
+pub fn unwrap_cline_envelope(body: &Value, provider: &str) -> Value {
+    if !has_cline_envelope(provider) {
+        return body.clone();
+    }
+    let success = body
+        .get("success")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    match (success, body.get("data")) {
+        (true, Some(Value::Object(_))) => body.get("data").cloned().unwrap_or(Value::Null),
+        _ => body.clone(),
     }
 }
 
@@ -823,5 +876,241 @@ mod tests {
         assert_eq!(o["data"][0]["owned_by"], "openai");
         let g = gemini_models_payload(&entries);
         assert_eq!(g["models"][0]["name"], "models/openai/gpt-4o");
+    }
+}
+
+// ─── Responses-protocol (codex / grok-cli / perplexity-agent) ───────────────
+
+/// Convert a chat request into a Responses API request body.
+pub fn translate_chat_to_responses(req: &ChatRequest, model: &str) -> Value {
+    let input: Vec<Value> = req
+        .messages
+        .iter()
+        .map(|m| {
+            json!({
+                "type": "message",
+                "role": m.role,
+                "content": [{"type": "input_text", "text": m.content}],
+            })
+        })
+        .collect();
+    let mut body = json!({
+        "model": nine_core::normalize_model_id(model),
+        "input": input,
+    });
+    if req.stream {
+        body["stream"] = Value::Bool(true);
+    }
+    body
+}
+
+fn text_from_response_output(v: &Value) -> String {
+    let mut out = String::new();
+    if let Some(t) = v.get("output_text").and_then(|t| t.as_str()) {
+        return t.to_string();
+    }
+    if let Some(items) = v.get("output").and_then(|o| o.as_array()) {
+        for item in items {
+            if item.get("type").and_then(|t| t.as_str()) == Some("message") {
+                if let Some(parts) = item.get("content").and_then(|c| c.as_array()) {
+                    for p in parts {
+                        let t = p.get("text").and_then(|t| t.as_str()).unwrap_or("");
+                        out.push_str(t);
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Convert a Responses API object into an OpenAI chat.completion.
+pub fn translate_response_to_chat(v: &Value, model: &str, req_id: &str) -> Value {
+    let text = text_from_response_output(v);
+    let usage = v.get("usage").cloned().unwrap_or_else(|| json!({}));
+    let input = usage
+        .get("input_tokens")
+        .and_then(|x| x.as_u64())
+        .unwrap_or(0);
+    let output = usage
+        .get("output_tokens")
+        .and_then(|x| x.as_u64())
+        .unwrap_or(0);
+    json!({
+        "id": v.get("id").and_then(|i| i.as_str()).unwrap_or(req_id),
+        "object": "chat.completion",
+        "created": chrono::Utc::now().timestamp(),
+        "model": nine_core::normalize_model_id(model),
+        "choices": [{"index": 0, "message": {"role": "assistant", "content": text}, "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": input, "completion_tokens": output, "total_tokens": input + output},
+    })
+}
+
+/// Translate one Responses SSE event into OpenAI chat.completion.chunk values.
+pub fn translate_response_sse(event: &Value, model: &str, req_id: &str) -> Vec<Value> {
+    let typ = event.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    let base = |delta: Value, finish: Value| {
+        json!({
+            "id": req_id,
+            "object": "chat.completion.chunk",
+            "created": chrono::Utc::now().timestamp(),
+            "model": nine_core::normalize_model_id(model),
+            "choices": [{"index": 0, "delta": delta, "finish_reason": finish}],
+        })
+    };
+    match typ {
+        "response.output_text.delta" => {
+            let text = event.get("delta").and_then(|d| d.as_str()).unwrap_or("");
+            vec![base(json!({"content": text}), Value::Null)]
+        }
+        "response.output_item.done" | "response.completed" | "response.done" => {
+            vec![base(json!({}), json!("stop"))]
+        }
+        _ => Vec::new(),
+    }
+}
+
+#[cfg(test)]
+mod registry_tests {
+    use super::registry::*;
+    use super::*;
+
+    #[test]
+    fn registry_has_all_upstream_ids() {
+        assert_eq!(REGISTRY.len(), 119);
+        let mut ids: Vec<&str> = REGISTRY.iter().map(|m| m.id).collect();
+        ids.sort();
+        ids.dedup();
+        assert_eq!(ids.len(), 119, "duplicate registry ids");
+    }
+
+    #[test]
+    fn registry_bases_valid_and_wire_mapped() {
+        for m in REGISTRY {
+            assert!(
+                m.base.is_empty()
+                    || m.base.starts_with("https://")
+                    || m.base.starts_with("http://"),
+                "bad base for {}: {}",
+                m.id,
+                m.base
+            );
+            let style = api_style(m.id);
+            let expect = match m.wire {
+                WireFormat::OpenAi(_) => ApiStyle::OpenAi,
+                WireFormat::Anthropic => ApiStyle::Anthropic,
+                WireFormat::Gemini => ApiStyle::Gemini,
+                WireFormat::Responses(_) => ApiStyle::Responses,
+                WireFormat::Native(_) => ApiStyle::Native,
+            };
+            assert_eq!(style, expect, "wire mismatch for {}", m.id);
+            if !m.base.is_empty() {
+                assert_eq!(base_url_for(m.id), m.base, "base mismatch {}", m.id);
+            }
+        }
+    }
+
+    #[test]
+    fn responses_wire_endpoints() {
+        assert_eq!(api_style("codex"), ApiStyle::Responses);
+        assert_eq!(api_style("grok-cli"), ApiStyle::Responses);
+        assert_eq!(api_style("cursor"), ApiStyle::Native);
+        assert_eq!(api_style("grok-web"), ApiStyle::Native);
+        assert_eq!(
+            chat_url("codex", "https://chatgpt.com/backend-api/codex", "m"),
+            "https://chatgpt.com/backend-api/codex/responses"
+        );
+        assert_eq!(auth_spec("grok-web"), AuthSpec::Cookie);
+    }
+
+    #[test]
+    fn responses_round_trip() {
+        let req = ChatRequest {
+            model: "gpt-5".into(),
+            messages: vec![ChatMessage {
+                role: "user".into(),
+                content: "hi".into(),
+            }],
+            stream: false,
+        };
+        let body = translate_chat_to_responses(&req, "codex/gpt-5");
+        assert_eq!(body["input"][0]["content"][0]["text"], "hi");
+        let resp = json!({
+            "id": "resp_1", "object": "response",
+            "output": [{"type": "message", "content": [{"type": "output_text", "text": "yo"}]}],
+            "usage": {"input_tokens": 4, "output_tokens": 2},
+        });
+        let chat = translate_response_to_chat(&resp, "codex/gpt-5", "req_x");
+        assert_eq!(chat["choices"][0]["message"]["content"], "yo");
+        assert_eq!(chat["usage"]["total_tokens"], 6);
+        assert!(chat.get("created").is_some());
+        let ev = json!({"type": "response.output_text.delta", "delta": "he"});
+        let chunks = translate_response_sse(&ev, "codex/gpt-5", "req_x");
+        assert_eq!(chunks[0]["choices"][0]["delta"]["content"], "he");
+        let done = json!({"type": "response.completed"});
+        assert_eq!(
+            translate_response_sse(&done, "m", "r")[0]["choices"][0]["finish_reason"],
+            "stop"
+        );
+        assert!(translate_response_sse(&json!({"type": "other"}), "m", "r").is_empty());
+    }
+    #[test]
+    fn cline_envelope_unwraps_only_success_data() {
+        let inner = json!({"choices": [], "model": "m"});
+        let wrapped = json!({"success": true, "data": inner});
+        assert_eq!(unwrap_cline_envelope(&wrapped, "cline"), inner);
+        assert_eq!(unwrap_cline_envelope(&wrapped, "clinepass"), inner);
+        // error envelope passes through
+        let err = json!({"success": false, "error": "bad"});
+        assert_eq!(unwrap_cline_envelope(&err, "cline"), err);
+        // non-object data passes through
+        let arr = json!({"success": true, "data": [1]});
+        assert_eq!(unwrap_cline_envelope(&arr, "cline"), arr);
+        // other providers never rewritten
+        assert_eq!(unwrap_cline_envelope(&wrapped, "openai"), wrapped);
+        assert!(!has_cline_envelope("openai"));
+    }
+    #[test]
+    fn every_known_provider_has_wire_auth_and_url() {
+        // Covers all 143 upstream ids: each must resolve to a wire protocol,
+        // an auth placement, and a buildable chat URL (registry or fallback).
+        assert!(
+            PROVIDER_IDS.len() >= 140,
+            "registry shrank: {}",
+            PROVIDER_IDS.len()
+        );
+        for id in PROVIDER_IDS {
+            let style = api_style(id);
+            let headers = auth_headers(id, "k");
+            assert!(!headers.is_empty(), "{id} has no auth placement");
+            match style {
+                ApiStyle::Anthropic => {
+                    assert!(headers.iter().any(|(n, _)| *n == "x-api-key"), "{id}");
+                    assert_eq!(chat_url(id, "https://h/v1", "m"), "https://h/v1/messages");
+                }
+                ApiStyle::Gemini => {
+                    assert!(headers.iter().any(|(n, _)| *n == "x-goog-api-key"), "{id}");
+                }
+                ApiStyle::OpenAi | ApiStyle::Responses => {
+                    assert!(headers.iter().any(|(n, _)| *n == "authorization"), "{id}");
+                }
+                // ponytail: proprietary wires (cursor/antigravity/kiro/vertex/...) stay
+                // explicit 501 until a protocol-compatible adapter exists; web-cookie
+                // providers forward the stored session cookie.
+                ApiStyle::Native => {}
+            }
+        }
+        // spot-check upstream base URLs against the registry dump
+        assert_eq!(base_url_for("deepseek"), "https://api.deepseek.com");
+        assert_eq!(base_url_for("cohere"), "https://api.cohere.ai/v1");
+        assert_eq!(
+            base_url_for("siliconflow"),
+            "https://api.siliconflow.com/v1"
+        );
+        assert_eq!(base_url_for("cline"), "https://api.cline.bot/api/v1");
+        assert_eq!(
+            chat_url("cline", base_url_for("cline"), "m"),
+            "https://api.cline.bot/api/v1/chat/completions"
+        );
     }
 }

@@ -281,3 +281,84 @@ async fn gemini_generate_content_passthrough() {
         "hello from gemini"
     );
 }
+
+#[tokio::test]
+async fn responses_wire_translates_to_chat_shape() {
+    let app = Router::new().route(
+        "/responses",
+        post(|body: axum::Json<serde_json::Value>| async move {
+            assert_eq!(body["model"], "gpt-5");
+            assert_eq!(body["input"][0]["content"][0]["text"], "hi");
+            axum::Json(serde_json::json!({
+                "id": "resp_9", "object": "response",
+                "output": [{"type": "message", "content": [{"type": "output_text", "text": "codex says hi"}]}],
+                "usage": {"input_tokens": 6, "output_tokens": 3},
+            }))
+            .into_response()
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://127.0.0.1:{}", listener.local_addr().unwrap().port());
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    let app = router_with_state(AppState::new(vec![up("codex", base)], 5_000));
+    let (s, b) = call(
+        app,
+        "/v1/chat/completions",
+        r#"{"model":"codex/gpt-5","messages":[{"role":"user","content":"hi"}]}"#,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["object"], "chat.completion");
+    assert_eq!(v["choices"][0]["message"]["content"], "codex says hi");
+    assert_eq!(v["usage"]["total_tokens"], 9);
+}
+
+#[tokio::test]
+async fn native_wire_returns_explicit_501() {
+    let base = spawn_mock().await;
+    let app = router_with_state(AppState::new(vec![up("cursor", base)], 5_000));
+    let (s, b) = call(
+        app,
+        "/v1/chat/completions",
+        r#"{"model":"cursor/auto","messages":[{"role":"user","content":"hi"}]}"#,
+    )
+    .await;
+    assert_eq!(s, StatusCode::NOT_IMPLEMENTED);
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["error"]["code"], "model_not_supported");
+}
+
+#[tokio::test]
+async fn cline_envelope_unwrapped_to_openai_shape() {
+    let app_mock = Router::new().route(
+        "/chat/completions",
+        post(|_body: axum::Json<serde_json::Value>| async {
+            axum::Json(serde_json::json!({
+                "success": true,
+                "data": {
+                    "id": "chatcmpl-cline",
+                    "object": "chat.completion",
+                    "created": 1700000000,
+                    "model": "x",
+                    "choices": [{"index": 0, "message": {"role": "assistant", "content": "cline says hi"}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 3, "completion_tokens": 5, "total_tokens": 8}
+                }
+            }))
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, app_mock).await.unwrap() });
+    let app = router_with_state(AppState::new(vec![up("cline", base)], 5_000));
+    let (s, b) = call(
+        app,
+        "/v1/chat/completions",
+        r#"{"model":"cline/anthropic-claude-sonnet-4-6","messages":[{"role":"user","content":"hi"}]}"#
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["choices"][0]["message"]["content"], "cline says hi");
+    assert!(v.get("success").is_none(), "envelope must be unwrapped");
+}

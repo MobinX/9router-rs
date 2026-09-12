@@ -1,11 +1,14 @@
 {
   "version": "0.7.0",
-  "lastUpdated": "2026-09-13",
+  "lastUpdated": "2026-09-12",
   "summary": {
-    "totalClaimedFeatures": 33,
-    "implementedAndTested": 33,
+    "totalClaimedFeatures": 195,
+    "verified": 44,
+    "implemented": 133,
+    "partial": 4,
+    "unsupportedOrBlocked": 14,
     "discoveredOnly": 0,
-    "unsupportedOrDeferred": 3
+    "unsupportedOrDeferred": 17
   },
   "features": [
     {
@@ -390,6 +393,1821 @@
         "crates/gateway/src/lib.rs::connection_candidate_tests::store_candidates_split_same_provider_first"
       ],
       "status": "Verified"
+    },
+    {
+      "id": "provider.agentrouter",
+      "name": "Provider agentrouter",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.alicode-intl",
+      "name": "Provider alicode-intl",
+      "original": "open-sse/providers/registry/alicode-intl.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.alicode",
+      "name": "Provider alicode",
+      "original": "open-sse/providers/registry/alicode.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.alims-intl",
+      "name": "Provider alims-intl",
+      "original": "open-sse/providers/registry/alims-intl.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.alitp-intl",
+      "name": "Provider alitp-intl",
+      "original": "open-sse/providers/registry/alitp-intl.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.amp",
+      "name": "Provider amp",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.anthropic-m",
+      "name": "Provider anthropic-m",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.anthropic",
+      "name": "Provider anthropic",
+      "original": "open-sse/providers/registry/anthropic.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.antigravity",
+      "name": "Provider antigravity",
+      "original": "open-sse/providers/registry/antigravity.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(antigravity)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: proprietary Google Cloud-Code protocol (loadCodeAssist/onboardUser), not plain HTTP JSON; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.api-airforce",
+      "name": "Provider api-airforce",
+      "original": "open-sse/providers/registry/api-airforce.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.assemblyai",
+      "name": "Provider assemblyai",
+      "original": "open-sse/providers/registry/assemblyai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.aws-polly",
+      "name": "Provider aws-polly",
+      "original": "open-sse/providers/registry/aws-polly.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.azure",
+      "name": "Provider azure",
+      "original": "open-sse/providers/registry/azure.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.baidu",
+      "name": "Provider baidu",
+      "original": "open-sse/providers/registry/baidu.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.bazaarlink",
+      "name": "Provider bazaarlink",
+      "original": "open-sse/providers/registry/bazaarlink.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.black-forest-labs",
+      "name": "Provider black-forest-labs",
+      "original": "open-sse/providers/registry/black-forest-labs.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.blackbox",
+      "name": "Provider blackbox",
+      "original": "open-sse/providers/registry/blackbox.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.bluesminds",
+      "name": "Provider bluesminds",
+      "original": "open-sse/providers/registry/bluesminds.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.brave-search",
+      "name": "Provider brave-search",
+      "original": "open-sse/providers/registry/brave-search.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.byteplus",
+      "name": "Provider byteplus",
+      "original": "open-sse/providers/registry/byteplus.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.cartesia",
+      "name": "Provider cartesia",
+      "original": "open-sse/providers/registry/cartesia.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.cerebras",
+      "name": "Provider cerebras",
+      "original": "open-sse/providers/registry/cerebras.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.chutes",
+      "name": "Provider chutes",
+      "original": "open-sse/providers/registry/chutes.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.claude",
+      "name": "Provider claude",
+      "original": "open-sse/providers/registry/claude.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.cline",
+      "name": "Provider cline",
+      "original": "open-sse/providers/registry/cline.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::cline_envelope_unwrapped_to_openai_shape"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.clinepass",
+      "name": "Provider clinepass",
+      "original": "open-sse/providers/registry/clinepass.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::cline_envelope_unwrapped_to_openai_shape"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.cloudflare-ai",
+      "name": "Provider cloudflare-ai",
+      "original": "open-sse/providers/registry/cloudflare-ai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.codebuddy-cn",
+      "name": "Provider codebuddy-cn",
+      "original": "open-sse/providers/registry/codebuddy-cn.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.codebuddy-intl",
+      "name": "Provider codebuddy-intl",
+      "original": "open-sse/providers/registry/codebuddy-intl.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.codex",
+      "name": "Provider codex",
+      "original": "open-sse/providers/registry/codex.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Responses",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.cohere",
+      "name": "Provider cohere",
+      "original": "open-sse/providers/registry/cohere.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.comfyui",
+      "name": "Provider comfyui",
+      "original": "open-sse/providers/registry/comfyui.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.commandcode",
+      "name": "Provider commandcode",
+      "original": "open-sse/providers/registry/commandcode.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(commandcode)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: proprietary /alpha/generate protocol; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.continue",
+      "name": "Provider continue",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.copilot",
+      "name": "Provider copilot",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.coqui",
+      "name": "Provider coqui",
+      "original": "open-sse/providers/registry/coqui.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.cursor",
+      "name": "Provider cursor",
+      "original": "open-sse/providers/registry/cursor.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(cursor)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: proprietary gRPC StreamUnifiedChatWithTools; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.deepgram",
+      "name": "Provider deepgram",
+      "original": "open-sse/providers/registry/deepgram.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.deepseek-tui",
+      "name": "Provider deepseek-tui",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.deepseek",
+      "name": "Provider deepseek",
+      "original": "open-sse/providers/registry/deepseek.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.devin-cli",
+      "name": "Provider devin-cli",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.droid",
+      "name": "Provider droid",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.edge-tts",
+      "name": "Provider edge-tts",
+      "original": "open-sse/providers/registry/edge-tts.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.elevenlabs",
+      "name": "Provider elevenlabs",
+      "original": "open-sse/providers/registry/elevenlabs.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.exa",
+      "name": "Provider exa",
+      "original": "open-sse/providers/registry/exa.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.fal-ai",
+      "name": "Provider fal-ai",
+      "original": "open-sse/providers/registry/fal-ai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.featherless",
+      "name": "Provider featherless",
+      "original": "open-sse/providers/registry/featherless.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.firecrawl",
+      "name": "Provider firecrawl",
+      "original": "open-sse/providers/registry/firecrawl.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.fireworks",
+      "name": "Provider fireworks",
+      "original": "open-sse/providers/registry/fireworks.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.fish-audio",
+      "name": "Provider fish-audio",
+      "original": "open-sse/providers/registry/fish-audio.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.gemini-cli",
+      "name": "Provider gemini-cli",
+      "original": "open-sse/providers/registry/gemini-cli.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Gemini",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.gemini",
+      "name": "Provider gemini",
+      "original": "open-sse/providers/registry/gemini.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Gemini",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.github",
+      "name": "Provider github",
+      "original": "open-sse/providers/registry/github.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.gitlab",
+      "name": "Provider gitlab",
+      "original": "open-sse/providers/registry/gitlab.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.glm-cn",
+      "name": "Provider glm-cn",
+      "original": "open-sse/providers/registry/glm-cn.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.glm",
+      "name": "Provider glm",
+      "original": "open-sse/providers/registry/glm.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.google-pse",
+      "name": "Provider google-pse",
+      "original": "open-sse/providers/registry/google-pse.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.google-tts",
+      "name": "Provider google-tts",
+      "original": "open-sse/providers/registry/google-tts.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.grok-cli",
+      "name": "Provider grok-cli",
+      "original": "open-sse/providers/registry/grok-cli.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Responses",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.grok-web",
+      "name": "Provider grok-web",
+      "original": "open-sse/providers/registry/grok-web.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(grok-web)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: browser-session web protocol, no API equivalent; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.groq",
+      "name": "Provider groq",
+      "original": "open-sse/providers/registry/groq.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.hermes",
+      "name": "Provider hermes",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.huggingface",
+      "name": "Provider huggingface",
+      "original": "open-sse/providers/registry/huggingface.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.hyperbolic",
+      "name": "Provider hyperbolic",
+      "original": "open-sse/providers/registry/hyperbolic.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.iflow",
+      "name": "Provider iflow",
+      "original": "open-sse/providers/registry/iflow.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.inworld",
+      "name": "Provider inworld",
+      "original": "open-sse/providers/registry/inworld.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.jcode",
+      "name": "Provider jcode",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.jina-ai",
+      "name": "Provider jina-ai",
+      "original": "open-sse/providers/registry/jina-ai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.jina-reader",
+      "name": "Provider jina-reader",
+      "original": "open-sse/providers/registry/jina-reader.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.kilo-gateway",
+      "name": "Provider kilo-gateway",
+      "original": "open-sse/providers/registry/kilo-gateway.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.kilocode",
+      "name": "Provider kilocode",
+      "original": "open-sse/providers/registry/kilocode.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.kimchi",
+      "name": "Provider kimchi",
+      "original": "open-sse/providers/registry/kimchi.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.kimi-coding",
+      "name": "Provider kimi-coding",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.kimi",
+      "name": "Provider kimi",
+      "original": "open-sse/providers/registry/kimi.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.kiro",
+      "name": "Provider kiro",
+      "original": "open-sse/providers/registry/kiro.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(kiro)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: proprietary AWS generateAssistantResponse protocol; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.linkup",
+      "name": "Provider linkup",
+      "original": "open-sse/providers/registry/linkup.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.llm7",
+      "name": "Provider llm7",
+      "original": "open-sse/providers/registry/llm7.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.local-device",
+      "name": "Provider local-device",
+      "original": "open-sse/providers/registry/local-device.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.longcat",
+      "name": "Provider longcat",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.mimo-free",
+      "name": "Provider mimo-free",
+      "original": "open-sse/providers/registry/mimo-free.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.minimax-cn",
+      "name": "Provider minimax-cn",
+      "original": "open-sse/providers/registry/minimax-cn.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.minimax",
+      "name": "Provider minimax",
+      "original": "open-sse/providers/registry/minimax.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.mistral",
+      "name": "Provider mistral",
+      "original": "open-sse/providers/registry/mistral.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.mmf",
+      "name": "Provider mmf",
+      "original": "open-sse/providers/registry/mmf.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.morph",
+      "name": "Provider morph",
+      "original": "open-sse/providers/registry/morph.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.nanobanana",
+      "name": "Provider nanobanana",
+      "original": "open-sse/providers/registry/nanobanana.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.nebius",
+      "name": "Provider nebius",
+      "original": "open-sse/providers/registry/nebius.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.novita",
+      "name": "Provider novita",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.nvidia",
+      "name": "Provider nvidia",
+      "original": "open-sse/providers/registry/nvidia.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.oai-cc",
+      "name": "Provider oai-cc",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "Anthropic",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.oai-r",
+      "name": "Provider oai-r",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.ollama-local",
+      "name": "Provider ollama-local",
+      "original": "open-sse/providers/registry/ollama-local.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.ollama",
+      "name": "Provider ollama",
+      "original": "open-sse/providers/registry/ollama.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(ollama)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: ollama cloud /api/chat protocol differs from /v1 chat completions; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.openai",
+      "name": "Provider openai",
+      "original": "open-sse/providers/registry/openai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.openclaw",
+      "name": "Provider openclaw",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.opencode-go",
+      "name": "Provider opencode-go",
+      "original": "open-sse/providers/registry/opencode-go.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.opencode",
+      "name": "Provider opencode",
+      "original": "open-sse/providers/registry/opencode.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.opendesign",
+      "name": "Provider opendesign",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.openrouter",
+      "name": "Provider openrouter",
+      "original": "open-sse/providers/registry/openrouter.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.perplexity-agent",
+      "name": "Provider perplexity-agent",
+      "original": "open-sse/providers/registry/perplexity-agent.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Responses",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.perplexity-web",
+      "name": "Provider perplexity-web",
+      "original": "open-sse/providers/registry/perplexity-web.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(perplexity-web)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: browser-session web SSE protocol, no API equivalent; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.perplexity",
+      "name": "Provider perplexity",
+      "original": "open-sse/providers/registry/perplexity.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.playht",
+      "name": "Provider playht",
+      "original": "open-sse/providers/registry/playht.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.poolside",
+      "name": "Provider poolside",
+      "original": "open-sse/providers/registry/poolside.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.qoder",
+      "name": "Provider qoder",
+      "original": "open-sse/providers/registry/qoder.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.qwen",
+      "name": "Provider qwen",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.recraft",
+      "name": "Provider recraft",
+      "original": "open-sse/providers/registry/recraft.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.reka",
+      "name": "Provider reka",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.roo",
+      "name": "Provider roo",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.runwayml",
+      "name": "Provider runwayml",
+      "original": "open-sse/providers/registry/runwayml.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.sambanova",
+      "name": "Provider sambanova",
+      "original": "open-sse/providers/registry/sambanova.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.sdwebui",
+      "name": "Provider sdwebui",
+      "original": "open-sse/providers/registry/sdwebui.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.searchapi",
+      "name": "Provider searchapi",
+      "original": "open-sse/providers/registry/searchapi.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.searxng",
+      "name": "Provider searxng",
+      "original": "open-sse/providers/registry/searxng.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.selfhosted-embedding",
+      "name": "Provider selfhosted-embedding",
+      "original": "open-sse/providers/registry/selfhosted-embedding.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.selfhosted-stt",
+      "name": "Provider selfhosted-stt",
+      "original": "open-sse/providers/registry/selfhosted-stt.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.selfhosted-tts",
+      "name": "Provider selfhosted-tts",
+      "original": "open-sse/providers/registry/selfhosted-tts.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.serper",
+      "name": "Provider serper",
+      "original": "open-sse/providers/registry/serper.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.siliconflow",
+      "name": "Provider siliconflow",
+      "original": "open-sse/providers/registry/siliconflow.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.stability-ai",
+      "name": "Provider stability-ai",
+      "original": "open-sse/providers/registry/stability-ai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.tavily",
+      "name": "Provider tavily",
+      "original": "open-sse/providers/registry/tavily.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.tencent",
+      "name": "Provider tencent",
+      "original": "open-sse/providers/registry/tencent.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.together",
+      "name": "Provider together",
+      "original": "open-sse/providers/registry/together.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.tokenrouter",
+      "name": "Provider tokenrouter",
+      "original": "open-sse/providers/registry/tokenrouter.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.topaz",
+      "name": "Provider topaz",
+      "original": "open-sse/providers/registry/topaz.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.tortoise",
+      "name": "Provider tortoise",
+      "original": "open-sse/providers/registry/tortoise.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.trae",
+      "name": "Provider trae",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.venice",
+      "name": "Provider venice",
+      "original": "open-sse/providers/registry/venice.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.vercel-ai-gateway",
+      "name": "Provider vercel-ai-gateway",
+      "original": "open-sse/providers/registry/vercel-ai-gateway.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.vercel",
+      "name": "Provider vercel",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.vertex-partner",
+      "name": "Provider vertex-partner",
+      "original": "open-sse/providers/registry/vertex-partner.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(vertex)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: proprietary Vertex partner protocol with GCP auth; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.vertex",
+      "name": "Provider vertex",
+      "original": "open-sse/providers/registry/vertex.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "Native(vertex)",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url",
+        "crates/gateway/tests/adapters.rs::native_wire_returns_explicit_501"
+      ],
+      "status": "Unsupported",
+      "reason": "chat endpoint: proprietary Vertex publisher protocol with GCP auth; explicit 501 per no-fake rule"
+    },
+    {
+      "id": "provider.volcengine-ark",
+      "name": "Provider volcengine-ark",
+      "original": "open-sse/providers/registry/volcengine-ark.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.voyage-ai",
+      "name": "Provider voyage-ai",
+      "original": "open-sse/providers/registry/voyage-ai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.windsurf",
+      "name": "Provider windsurf",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.workbuddy",
+      "name": "Provider workbuddy",
+      "original": "src/shared/constants/providers.js (alias/legacy id)",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.xai",
+      "name": "Provider xai",
+      "original": "open-sse/providers/registry/xai.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.xiaomi-mimo",
+      "name": "Provider xiaomi-mimo",
+      "original": "open-sse/providers/registry/xiaomi-mimo.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.xiaomi-tokenplan",
+      "name": "Provider xiaomi-tokenplan",
+      "original": "open-sse/providers/registry/xiaomi-tokenplan.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.xquik",
+      "name": "Provider xquik",
+      "original": "open-sse/providers/registry/xquik.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.youcom",
+      "name": "Provider youcom",
+      "original": "open-sse/providers/registry/youcom.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "provider.zed",
+      "name": "Provider zed",
+      "original": "open-sse/providers/registry/zed.js",
+      "rustModule": "nine_providers::registry",
+      "wire": "OpenAi",
+      "tests": [
+        "crates/providers/src/lib.rs::tests::every_known_provider_has_wire_auth_and_url"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "oauth.provider.codex",
+      "name": "OAuth codex",
+      "original": "src/lib/oauth/providers/codex.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.claude",
+      "name": "OAuth claude",
+      "original": "src/lib/oauth/providers/claude.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.grok-cli",
+      "name": "OAuth grok-cli",
+      "original": "src/lib/oauth/providers/grok-cli.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.kimi",
+      "name": "OAuth kimi",
+      "original": "src/lib/oauth/providers/kimi.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.iflow",
+      "name": "OAuth iflow",
+      "original": "src/lib/oauth/providers/iflow.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.github",
+      "name": "OAuth github",
+      "original": "src/lib/oauth/providers/github.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.gemini-cli",
+      "name": "OAuth gemini-cli",
+      "original": "src/lib/oauth/providers/gemini-cli.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.gitlab",
+      "name": "OAuth gitlab",
+      "original": "src/lib/oauth/providers/gitlab.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.antigravity",
+      "name": "OAuth antigravity",
+      "original": "src/lib/oauth/providers/antigravity.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.cline",
+      "name": "OAuth cline",
+      "original": "src/lib/oauth/providers/cline.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.clinepass",
+      "name": "OAuth clinepass",
+      "original": "src/lib/oauth/providers/clinepass.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.provider.qoder",
+      "name": "OAuth qoder",
+      "original": "src/lib/oauth/providers/qoder.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Partial",
+      "reason": "browser device page only; custom PKCE+nonce polling deferred (501)"
+    },
+    {
+      "id": "oauth.provider.kiro",
+      "name": "OAuth kiro",
+      "original": "src/lib/oauth/providers/kiro.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Partial",
+      "reason": "social-login spec present; AWS OIDC device flow deferred (501)"
+    },
+    {
+      "id": "oauth.provider.cursor",
+      "name": "OAuth cursor",
+      "original": "src/lib/oauth/providers/cursor.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Partial",
+      "reason": "import-token only by design; start/exchange 501 with guidance"
+    },
+    {
+      "id": "oauth.provider.kimchi",
+      "name": "OAuth kimchi",
+      "original": "src/lib/oauth/providers/kimchi.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Partial",
+      "reason": "browser-token flow; start URL + import-token storage"
+    },
+    {
+      "id": "oauth.provider.codebuddy-cn",
+      "name": "OAuth codebuddy-cn",
+      "original": "src/lib/oauth/providers/codebuddy-cn.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Blocked",
+      "reason": "custom state-POST + GET-poll device flow; no standard endpoints"
+    },
+    {
+      "id": "oauth.provider.codebuddy-intl",
+      "name": "OAuth codebuddy-intl",
+      "original": "src/lib/oauth/providers/codebuddy-intl.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Blocked",
+      "reason": "custom state-POST + GET-poll device flow; no standard endpoints"
+    },
+    {
+      "id": "oauth.provider.kilocode",
+      "name": "OAuth kilocode",
+      "original": "src/lib/oauth/providers/kilocode.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Blocked",
+      "reason": "custom device flow (POST initiate + GET poll), no refresh; 501 with guidance"
+    },
+    {
+      "id": "oauth.provider.zed",
+      "name": "OAuth zed",
+      "original": "src/lib/oauth/providers/zed.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Blocked",
+      "reason": "RSA native-app flow; needs rsa crate + local keypair loopback"
+    },
+    {
+      "id": "oauth.provider.xiaomi-mimo",
+      "name": "OAuth xiaomi-mimo",
+      "original": "src/lib/oauth/providers/xiaomi-mimo.js",
+      "rustModule": "nine_oauth::base_spec",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+      ],
+      "status": "Blocked",
+      "reason": "custom X25519+AES-GCM callback encryption; needs crypto deps"
     }
   ],
   "deferredOrUnsupported": [

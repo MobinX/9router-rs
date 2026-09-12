@@ -17,29 +17,45 @@ Generic flow: `GET /api/oauth/[provider]` (start: auth URL + PKCE + state) → c
 
 Security: no hardcoded secrets; PKCE S256, state CSRF, localhost callback validated, tokens never logged, sqlite file 0600, logout/revoke deletes row.
 
-## Phase 5 verified status
+## Phase 6 verified status (all 20 upstream PROVIDER_OAUTH keys)
 
-All 12 providers reverse-engineered from 9Router bundle:
-- `codex` — OpenAI OAuth, PKCE S256, fixedPort 1455, `/auth/callback`
-- `claude` / `anthropic` — Claude OAuth, PKCE S256, `/api/oauth/callback`
-- `grok-cli` / `xai` — xAI device+auth, PKCE S256, deviceFlow=true
-- `kimi` / `kimi-coding` — Moonshot device flow, `/code/authorize_device`
-- `iflow` — iFlow auth, client_id+secret exchange
-- `github` / `copilot` — GitHub device+web flow
-- `gemini` / `gemini-cli` — Google OAuth2, cloud-platform scope, PKCE S256
-- `kiro` — Kiro auth desktop login, PKCE S256, device flow
-- `gitlab` — GitLab OAuth, PKCE S256
-- `cursor` — Cursor deep control auth
-- `qoder` — Qoder OAuth
-- `xiaomi-mimo` — Xiaomi token-plan auth
+Reverse-engineered from `open-sse/providers/index.js` PROVIDER_OAUTH + `src/lib/oauth/*`.
+Public installed-app client ids ship as defaults (as upstream); secrets are env-only
+(`NINE_<PROVIDER>_CLIENT_ID` / `NINE_<PROVIDER>_CLIENT_SECRET` / `oauth-specs.json` win).
+
+Full generic flow (Verified): start + PKCE + state + exchange + refresh + import + logout:
+- `codex` — authcode PKCE, fixedPort 1455, extra codex_cli params; form refresh with scope
+- `claude` — authcode PKCE; JSON refresh without secret (upstream REFRESH_PROFILES)
+- `grok-cli` / `xai` — device flow; public client id; standard refresh
+- `kimi` / `kimi-coding` — device flow (`/code/authorize_device`); public client id
+- `iflow` — authcode; public client id; secret env-only; Basic-auth refresh; phone extra params
+- `github` / `copilot` — device+web flow; public client id; secret iff configured
+- `gemini-cli` / `gemini` — Google authcode (no PKCE, `access_type=offline`+`prompt=consent`)
+- `antigravity` — Google authcode with cclog/experimentsandconfigs scopes
+- `gitlab` — authcode PKCE, `api read_user`
+- `cline` / `clinepass` — base64 token-code exchange (no client needed); JSON fallback POST;
+  JSON refresh against `.../auth/refresh`; non-stream envelope unwrap in gateway
+
+Partial (documented limits, 501s where interactive polling is required):
+- `qoder` — real device page URL; custom PKCE+nonce polling deferred
+- `kiro` — social-login spec present; AWS OIDC device flow deferred
+- `cursor` — import-token only by design (no browser endpoints upstream either)
+- `kimchi` — browser-token flow (`/cli-auth?callback=&state=`); stored via import-token
+
+Blocked (spec present for discovery; flows 501 with reason per no-fake rule):
+- `codebuddy-cn` / `codebuddy-intl` — custom state-POST + GET-poll device flow
+- `kilocode` — custom device flow, no refresh upstream either
+- `zed` — RSA native-app flow (needs `rsa` crate + local keypair loopback)
+- `xiaomi-mimo` — X25519+AES-GCM callback encryption (needs crypto deps)
 
 Endpoints implemented & tested:
-- `GET /api/oauth/:provider` — authorize URL generation with PKCE S256 + CSRF state
-- `GET /api/oauth/callback?code=&state=` — token exchange + ID-token sub/email decode + `providerConnections` row upsert + KV cleanup
-- `POST /api/oauth/:provider/exchange` — headless exchange
-- `POST /api/oauth/:provider/refresh` — token rotation via refresh_token
-- `POST /api/oauth/:provider/import-token` — token import
+- `GET /api/oauth/:provider` — authorize URL (+ custom Cline/Kimchi shapes); 501 for
+  custom-crypto (zed, xiaomi-mimo) and import-only/device flows without a browser URL
+- `GET /api/oauth/callback?code=&state=` — exchange incl. Cline base64 + email capture
+- `POST /api/oauth/:provider/exchange` — headless exchange incl. Cline base64/JSON
+- `POST /api/oauth/:provider/refresh` — per-provider shape (Claude JSON, Cline JSON+URL,
+  iFlow Basic, Codex scope); 501 when no standard endpoint exists
+- `POST /api/oauth/:provider/import-token` — token import (covers cursor/kimchi/trae/windsurf)
 - `POST /api/oauth/:provider/api-key` — manual key connection
 - `POST /api/oauth/:provider/logout` — delete connection row
-- Interactive flows (`auto-import`, `social-exchange`, `import-cli-proxy`) return explicit `501 not_implemented` per no-fake rule.
-- Tokens stored in `providerConnections.data`; `GET /api/providers` masks sensitive fields, exposes `{id,provider,authType,name,email,expiresAt,scope}`.
+- Interactive device-polling stays deferred (matrix `deferredOrUnsupported`), 501 by design.

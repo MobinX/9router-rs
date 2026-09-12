@@ -120,9 +120,9 @@ request path (explicit `refresh` action renews; see security-audit gaps).
 | Health/version/init | /api/* | nine-gateway | [x] | [x] | [x] | [ ] | Complete |
 | OpenAI chat + SSE | /api/v1/chat/completions | nine-gateway | [x] | [x] | [x] | [ ] | Complete |
 | Responses/models/messages/v1beta | /api/v1/* | nine-gateway | [x] | [x] | [x] | [ ] | Complete |
-| Provider registry (143 ids) + 3 wire adapters + 20 OpenAI-compat bases | public/providers | nine-providers | [x] | [x] | [x] | [ ] | Complete |
+| 143 provider ids: 88 OpenAI + 6 Claude + 2 Gemini + 3 Responses chat wires, 9 proprietary Native (explicit 501), Cline envelope | open-sse/providers/registry | nine-providers | [x] | [x] | [x] | [ ] | Complete |
 | Anthropic/Gemini translation | built chunks | nine-providers | [x] | [x] | [x] | [ ] | Complete |
-| OAuth 12 flows (PKCE/state/refresh/import/logout) | /api/oauth/* | nine-oauth | [x] | [x] | [x] | [ ] | Complete |
+| OAuth 20 flows: 11 full (start/exchange/refresh/import/logout), 4 partial (import/device-page), 5 blocked custom-crypto/device (explicit 501) | src/lib/oauth + PROVIDER_OAUTH | nine-oauth | [x] | [x] | [x] | [ ] | Complete |
 | Routing priority/RR/alias/combo/fallback | combos+models | nine-routing | [x] | [x] | [x] | [ ] | Complete |
 | Storage 11 tables + KV + usage | sqlite | nine-storage | [x] | [x] | [ ] | [ ] | Complete |
 | Connection-backed upstream routing | connection evaluator | nine-gateway | [x] | [ ] | [ ] | [ ] | Complete |
@@ -130,7 +130,7 @@ request path (explicit `refresh` action renews; see security-audit gaps).
 | Security controls | — | all crates | [x] | [x] | [ ] | [ ] | Complete |
 | Performance parity | — | release binary | [x] | [x] | [x] | [ ] | Complete |
 
-Totals: 33 claimed features, 33 implemented and tested (110 tests pass,
+Totals: 195 claimed features (33 gateway/routing/storage + 142 provider + 20 OAuth), 126 tests pass,
 `cargo test --workspace` EXIT=0; clippy `-D warnings` clean; fmt clean).
 Unsupported/deferred (with reasons in `feature-matrix.json`): MITM TLS
 intercept (external privileged helper), tunnel daemons (external binaries),

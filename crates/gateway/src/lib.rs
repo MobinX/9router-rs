@@ -331,6 +331,17 @@ async fn oauth_start(State(st): State<Arc<AppState>>, Path(provider): Path<Strin
             "unknown_provider",
         );
     };
+    if let Some(reason) = nine_oauth::start_unsupported_reason(&provider) {
+        return err(501, reason, "not_implemented", "custom_token_flow");
+    }
+    if spec.authorize_url.is_empty() {
+        return err(
+            501,
+            "provider uses a custom device flow; use the import-token action",
+            "not_implemented",
+            "custom_token_flow",
+        );
+    }
     let pkce = if spec.pkce {
         Some(nine_oauth::Pkce::generate())
     } else {
@@ -447,6 +458,14 @@ async fn oauth_callback(
             "missing_spec",
         );
     };
+    if spec.token_url.is_empty() {
+        return err(
+            501,
+            "provider uses a custom token flow; use the import-token action",
+            "not_implemented",
+            "custom_token_flow",
+        );
+    }
     if spec.client_id.is_empty() {
         return err(
             400,
@@ -459,45 +478,42 @@ async fn oauth_callback(
         .get("codeVerifier")
         .and_then(|v| v.as_str())
         .map(nine_oauth::Pkce::from_verifier);
-    let body = spec.exchange_body(code, &redirect_uri, pkce.as_ref());
-    let resp = match st
-        .client
-        .post(&spec.token_url)
-        .header("content-type", "application/x-www-form-urlencoded")
-        .body(nine_oauth::form_encode(&body))
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            return err(
-                502,
-                &format!("token exchange failed: {e}"),
-                "upstream_error",
+    let now = chrono::Utc::now().timestamp();
+    let is_cline = matches!(provider.as_str(), "cline" | "clinepass");
+    let cline_email: Option<String> = if is_cline {
+        nine_oauth::cline_decode_code(code)
+            .filter(|ct| !ct.access_token.is_empty())
+            .map(|ct| ct.email.clone())
+    } else {
+        None
+    };
+    let token_json: Value = match (is_cline, nine_oauth::cline_decode_code(code)) {
+        (true, Some(ct)) if !ct.access_token.is_empty() => nine_oauth::cline_token_value(&ct, now),
+        _ => {
+            let body = spec.exchange_body(code, &redirect_uri, pkce.as_ref());
+            match post_token_json(
+                &st.client,
+                &spec.token_url,
+                "application/x-www-form-urlencoded",
+                None,
+                nine_oauth::form_encode(&body),
                 "token_exchange_failed",
             )
+            .await
+            {
+                Ok(v) => v,
+                Err(r) => {
+                    // keep historical callback mapping: upstream failures surface as 400
+                    let (mut parts, body) = (*r).into_parts();
+                    let bytes = axum::body::to_bytes(body, 1024 * 1024)
+                        .await
+                        .unwrap_or_default();
+                    parts.status = StatusCode::BAD_REQUEST;
+                    return Response::from_parts(parts, Body::from(bytes));
+                }
+            }
         }
     };
-    let cb_status = resp.status();
-    if !cb_status.is_success() {
-        let txt = resp.text().await.unwrap_or_default();
-        let msg: String = serde_json::from_str::<Value>(&txt)
-            .ok()
-            .and_then(|v| {
-                v.pointer("/error/message")
-                    .and_then(|m| m.as_str())
-                    .map(str::to_string)
-            })
-            .unwrap_or_else(|| txt.chars().take(300).collect());
-        return err(
-            400,
-            &format!("HTTP {cb_status}: {msg}"),
-            "invalid_request_error",
-            "token_exchange_failed",
-        );
-    }
-    let token_json = resp.json::<Value>().await.unwrap_or(Value::Null);
-    let now = chrono::Utc::now().timestamp();
     let parsed = nine_oauth::parse_token_response(&provider, &provider, &token_json, now);
     let account_id = parsed
         .id_token
@@ -544,7 +560,8 @@ async fn oauth_callback(
                 base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, b).ok()
             })
             .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
-            .and_then(|v| v.get("email").and_then(|s| s.as_str()).map(str::to_string)),
+            .and_then(|v| v.get("email").and_then(|s| s.as_str()).map(str::to_string))
+            .or_else(|| cline_email.clone().filter(|e| !e.is_empty())),
         priority: None,
         is_active: true,
         data: serde_json::json!({
@@ -596,6 +613,54 @@ struct OAuthAction {
     connection_id: Option<String>,
 }
 
+/// POST a token request and parse the JSON body. Err(response) is final.
+async fn post_token_json(
+    client: &reqwest::Client,
+    url: &str,
+    content_type: &str,
+    basic_auth: Option<&str>,
+    body: String,
+    failure_code: &str,
+) -> Result<Value, Box<Response>> {
+    let mut req = client
+        .post(url)
+        .header("content-type", content_type)
+        .body(body);
+    if let Some(b) = basic_auth {
+        req = req.header("authorization", format!("Basic {b}"));
+    }
+    let resp = match req.send().await {
+        Ok(r) => r,
+        Err(e) => {
+            return Err(Box::new(err(
+                502,
+                &format!("token exchange failed: {e}"),
+                "upstream_error",
+                failure_code,
+            )));
+        }
+    };
+    let status = resp.status();
+    let txt = resp.text().await.unwrap_or_default();
+    if !status.is_success() {
+        let msg: String = serde_json::from_str::<Value>(&txt)
+            .ok()
+            .and_then(|v| {
+                v.pointer("/error/message")
+                    .and_then(|m| m.as_str())
+                    .map(str::to_string)
+            })
+            .unwrap_or_else(|| txt.chars().take(300).collect());
+        return Err(Box::new(err(
+            status.as_u16(),
+            &format!("HTTP {status}: {msg}"),
+            "invalid_request_error",
+            failure_code,
+        )));
+    }
+    Ok(serde_json::from_str(&txt).unwrap_or(Value::Null))
+}
+
 async fn oauth_action(
     State(st): State<Arc<AppState>>,
     Path((provider, action)): Path<(String, String)>,
@@ -611,7 +676,29 @@ async fn oauth_action(
                     "unknown_provider",
                 );
             };
-            if spec.client_id.is_empty() {
+            if spec.token_url.is_empty() {
+                return err(
+                    501,
+                    "provider uses a custom token flow; use the import-token action",
+                    "not_implemented",
+                    "custom_token_flow",
+                );
+            }
+            let code = match body.code {
+                Some(c) if !c.is_empty() => c,
+                _ => return err(400, "missing code", "invalid_request_error", "missing_code"),
+            };
+            let now = chrono::Utc::now().timestamp();
+            // Cline-family: the callback code usually carries base64 token JSON
+            // (upstream cline.js) and needs no registered client; otherwise JSON
+            // exchange POST like upstream.
+            let is_cline = matches!(provider.as_str(), "cline" | "clinepass");
+            let cline_tokens: Option<nine_oauth::ClineTokens> = if is_cline {
+                nine_oauth::cline_decode_code(&code).filter(|ct| !ct.access_token.is_empty())
+            } else {
+                None
+            };
+            if spec.client_id.is_empty() && cline_tokens.is_none() {
                 return err(
                     400,
                     "client not configured",
@@ -619,57 +706,51 @@ async fn oauth_action(
                     "oauth_client_not_configured",
                 );
             }
-            let code = match body.code {
-                Some(c) if !c.is_empty() => c,
-                _ => return err(400, "missing code", "invalid_request_error", "missing_code"),
-            };
-            let redirect_uri = String::new();
-            let pkce = body
-                .code_verifier
-                .as_deref()
-                .map(nine_oauth::Pkce::from_verifier);
-            let resp = match st
-                .client
-                .post(&spec.token_url)
-                .header("content-type", "application/x-www-form-urlencoded")
-                .body(nine_oauth::form_encode(&spec.exchange_body(
-                    &code,
-                    &redirect_uri,
-                    pkce.as_ref(),
-                )))
-                .send()
-                .await
-            {
-                Ok(r) => r,
-                Err(e) => {
-                    return err(
-                        502,
-                        &format!("token exchange failed: {e}"),
-                        "upstream_error",
+            let cline_email: Option<String> = cline_tokens.as_ref().map(|ct| ct.email.clone());
+            let token_json: Value = match (is_cline, cline_tokens) {
+                (true, Some(ct)) => nine_oauth::cline_token_value(&ct, now),
+                _ => {
+                    let redirect_uri = String::new();
+                    let pkce = body
+                        .code_verifier
+                        .as_deref()
+                        .map(nine_oauth::Pkce::from_verifier);
+                    let (content_type, req_body) = if is_cline {
+                        (
+                            "application/json",
+                            serde_json::json!({
+                                "grant_type": "authorization_code",
+                                "code": code,
+                                "client_type": "extension",
+                                "redirect_uri": redirect_uri,
+                            })
+                            .to_string(),
+                        )
+                    } else {
+                        (
+                            "application/x-www-form-urlencoded",
+                            nine_oauth::form_encode(&spec.exchange_body(
+                                &code,
+                                &redirect_uri,
+                                pkce.as_ref(),
+                            )),
+                        )
+                    };
+                    match post_token_json(
+                        &st.client,
+                        &spec.token_url,
+                        content_type,
+                        None,
+                        req_body,
                         "token_exchange_failed",
                     )
+                    .await
+                    {
+                        Ok(v) => v,
+                        Err(r) => return *r,
+                    }
                 }
             };
-            let status = resp.status();
-            let txt = resp.text().await.unwrap_or_default();
-            if !status.is_success() {
-                let msg: String = serde_json::from_str::<Value>(&txt)
-                    .ok()
-                    .and_then(|v| {
-                        v.pointer("/error/message")
-                            .and_then(|m| m.as_str())
-                            .map(str::to_string)
-                    })
-                    .unwrap_or_else(|| txt.chars().take(300).collect());
-                return err(
-                    status.as_u16(),
-                    &format!("HTTP {status}: {msg}"),
-                    "invalid_request_error",
-                    "token_exchange_failed",
-                );
-            }
-            let token_json: Value = serde_json::from_str(&txt).unwrap_or(Value::Null);
-            let now = chrono::Utc::now().timestamp();
             let parsed = nine_oauth::parse_token_response(&provider, &provider, &token_json, now);
             let conn = ProviderConnection {
                 id: uuid::Uuid::new_v4().to_string(),
@@ -705,7 +786,8 @@ async fn oauth_action(
                             .ok()
                     })
                     .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
-                    .and_then(|v| v.get("email").and_then(|s| s.as_str()).map(str::to_string)),
+                    .and_then(|v| v.get("email").and_then(|s| s.as_str()).map(str::to_string))
+                    .or_else(|| cline_email.clone().filter(|e| !e.is_empty())),
                 priority: None,
                 is_active: true,
                 data: serde_json::json!({"access_token": parsed.access_token, "refresh_token": parsed.refresh_token, "expires_at": parsed.expires_at, "id_token": parsed.id_token, "scope": parsed.scope}),
@@ -826,38 +908,27 @@ async fn oauth_action(
                     "unknown_provider",
                 );
             };
-            let resp = match st
-                .client
-                .post(&spec.token_url)
-                .header("content-type", "application/x-www-form-urlencoded")
-                .body(nine_oauth::form_encode(&spec.refresh_body(refresh_token)))
-                .send()
-                .await
-            {
-                Ok(r) => r,
-                Err(e) => {
-                    return err(
-                        502,
-                        &format!("refresh failed: {e}"),
-                        "upstream_error",
-                        "refresh_failed",
-                    )
-                }
+            let Some(refresh) = spec.refresh_request(refresh_token) else {
+                return err(
+                    501,
+                    "provider has no standard refresh endpoint; re-authenticate or import a token",
+                    "not_implemented",
+                    "refresh_unsupported",
+                );
             };
-            let status = resp.status();
-            let txt = resp.text().await.unwrap_or_default();
-            if !status.is_success() {
-                let msg: String = serde_json::from_str::<Value>(&txt)
-                    .ok()
-                    .and_then(|v| {
-                        v.pointer("/error/message")
-                            .and_then(|m| m.as_str())
-                            .map(str::to_string)
-                    })
-                    .unwrap_or_else(|| txt.chars().take(300).collect());
-                return err(status.as_u16(), &msg, "upstream_error", "refresh_failed");
-            }
-            let token_json: Value = serde_json::from_str(&txt).unwrap_or(Value::Null);
+            let token_json: Value = match post_token_json(
+                &st.client,
+                &refresh.url,
+                refresh.content_type,
+                refresh.basic_auth.as_deref(),
+                refresh.body,
+                "refresh_failed",
+            )
+            .await
+            {
+                Ok(v) => v,
+                Err(r) => return *r,
+            };
             let parsed = nine_oauth::parse_token_response(
                 &conn.provider,
                 &conn.id,
@@ -1381,6 +1452,7 @@ async fn chat_completions(
 
     let messages = parse_messages(&v);
     let mut last: Option<Response> = None;
+    let mut native_seen = false;
 
     // 3. Fallback execution across combo model candidates
     for cand_model in &model_candidates {
@@ -1409,6 +1481,11 @@ async fn chat_completions(
                     base_url: "",
                 }
                 .translate_request(&chat_req),
+                ApiStyle::Responses => nine_providers::translate_chat_to_responses(&chat_req, bare),
+                ApiStyle::Native => {
+                    native_seen = true;
+                    continue;
+                }
             };
             let url = nine_providers::chat_url(cand_provider, base, bare);
             match try_upstream(
@@ -1431,6 +1508,14 @@ async fn chat_completions(
 
     with_id(
         last.unwrap_or_else(|| {
+            if native_seen {
+                return err(
+                    501,
+                    "provider uses a proprietary protocol not supported over this endpoint",
+                    "invalid_request_error",
+                    "model_not_supported",
+                );
+            }
             err(
                 502,
                 "all model candidates and upstreams failed",
@@ -1576,7 +1661,7 @@ async fn try_upstream(
                 passthrough_sse(resp, req_id)
             } else {
                 match resp.bytes().await {
-                    Ok(b) => with_id(forward_json(b), req_id),
+                    Ok(b) => with_id(forward_json(provider, b), req_id),
                     Err(_) => {
                         return retry(with_id(
                             err(
@@ -1628,6 +1713,53 @@ async fn try_upstream(
                 }
             }
         }
+        ApiStyle::Responses => {
+            if stream {
+                translate_sse_stream(resp, provider, model, req_id)
+            } else {
+                match resp.bytes().await {
+                    Ok(b) => match serde_json::from_slice::<serde_json::Value>(&b) {
+                        Ok(v) => {
+                            let out = nine_providers::translate_response_to_chat(&v, model, req_id);
+                            (StatusCode::OK, Json(out)).into_response()
+                        }
+                        Err(_) => {
+                            return retry(with_id(
+                                err(
+                                    502,
+                                    "malformed upstream json",
+                                    "upstream_error",
+                                    "malformed_json",
+                                ),
+                                req_id,
+                            ))
+                        }
+                    },
+                    Err(_) => {
+                        return retry(with_id(
+                            err(
+                                502,
+                                "upstream read failed",
+                                "upstream_error",
+                                "upstream_error",
+                            ),
+                            req_id,
+                        ))
+                    }
+                }
+            }
+        }
+        ApiStyle::Native => {
+            return Ok(with_id(
+                err(
+                    501,
+                    "provider uses a proprietary protocol not supported over this endpoint",
+                    "invalid_request_error",
+                    "model_not_supported",
+                ),
+                req_id,
+            ));
+        }
         ApiStyle::Gemini => {
             if stream {
                 translate_sse_stream(resp, provider, model, req_id)
@@ -1668,9 +1800,14 @@ async fn try_upstream(
     Ok(resp)
 }
 
-fn forward_json(bytes: Bytes) -> Response {
+fn forward_json(provider: &str, bytes: Bytes) -> Response {
     match serde_json::from_slice::<serde_json::Value>(&bytes) {
-        Ok(mut v) => {
+        Ok(v) => {
+            let mut v = nine_providers::unwrap_cline_envelope(&v, provider);
+            // ponytail: request-side quirks (dropClientMetadata, cloakToolsOnOAuth)
+            // need no handling: OpenAI payloads are rebuilt from scratch above.
+            // ponytail: MiniMax Claude-format quirks live in the Anthropic branch.
+
             if let Some(o) = v.as_object_mut() {
                 o.entry("usage").or_insert(serde_json::json!({
                     "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0
@@ -1751,8 +1888,11 @@ fn translate_sse_stream(
                     let Ok(v) = serde_json::from_str::<serde_json::Value>(d) else {
                         continue;
                     };
-                    let chunks = if nine_providers::api_style(&provider) == ApiStyle::Gemini {
+                    let style = nine_providers::api_style(&provider);
+                    let chunks = if style == ApiStyle::Gemini {
                         vec![nine_providers::translate_gemini_sse(&v, &model, &rid)]
+                    } else if style == ApiStyle::Responses {
+                        nine_providers::translate_response_sse(&v, &model, &rid)
                     } else {
                         nine_providers::translate_anthropic_sse(&v, &model, &rid)
                     };
@@ -2117,6 +2257,7 @@ async fn responses(State(st): State<Arc<AppState>>, headers: HeaderMap, body: By
 
     let messages = parse_responses_input(&v);
     let mut last: Option<Response> = None;
+    let mut native_seen = false;
 
     for cand_model in &model_candidates {
         let (prefix, bare) = nine_core::split_provider_model(cand_model);
@@ -2144,6 +2285,11 @@ async fn responses(State(st): State<Arc<AppState>>, headers: HeaderMap, body: By
                     base_url: "",
                 }
                 .translate_request(&chat_req),
+                ApiStyle::Responses => nine_providers::translate_chat_to_responses(&chat_req, bare),
+                ApiStyle::Native => {
+                    native_seen = true;
+                    continue;
+                }
             };
             let url = nine_providers::chat_url(cand_provider, base, bare);
             match try_upstream(
@@ -2185,6 +2331,14 @@ async fn responses(State(st): State<Arc<AppState>>, headers: HeaderMap, body: By
 
     with_id(
         last.unwrap_or_else(|| {
+            if native_seen {
+                return err(
+                    501,
+                    "provider uses a proprietary protocol not supported over this endpoint",
+                    "invalid_request_error",
+                    "model_not_supported",
+                );
+            }
             err(
                 502,
                 "all model candidates and upstreams failed",
@@ -2509,6 +2663,83 @@ mod tests {
         .await;
         assert_eq!(s, StatusCode::BAD_REQUEST);
         assert_eq!(v["error"]["type"], "invalid_request_error");
+    }
+
+    #[tokio::test]
+    async fn custom_token_flows_start_501() {
+        let app = router_with_state(
+            AppState::new(Vec::new(), 1000)
+                .with_oauth_specs(nine_oauth::load_specs("/nonexistent-dir-xyz")),
+        );
+        for p in ["cursor", "kilocode", "codebuddy-cn", "zed", "xiaomi-mimo"] {
+            let (s, _, v) = body_json(
+                app.clone(),
+                Request::get(format!("/api/oauth/{p}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+            assert_eq!(s, StatusCode::NOT_IMPLEMENTED, "start {p}");
+            assert_eq!(v["error"]["code"], "custom_token_flow");
+        }
+        let (s, _, v) = body_json(
+            app.clone(),
+            Request::get("/api/oauth/cline")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        assert!(v["authorizeUrl"]
+            .as_str()
+            .unwrap()
+            .contains("client_type=extension"));
+        let (s, _, _) = body_json(
+            app,
+            Request::get("/api/oauth/qoder")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn exchange_custom_flows_501_and_cline_base64_ok() {
+        let app = router_with_state(
+            AppState::new(Vec::new(), 1000)
+                .with_oauth_specs(nine_oauth::load_specs("/nonexistent-dir-xyz")),
+        );
+        for p in ["cursor", "kilocode", "zed"] {
+            let (s, _, v) = body_json(
+                app.clone(),
+                Request::post(format!("/api/oauth/{p}/exchange"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(r#"{"code":"x"}"#))
+                    .unwrap(),
+            )
+            .await;
+            assert_eq!(s, StatusCode::NOT_IMPLEMENTED, "exchange {p}");
+            assert_eq!(v["error"]["code"], "custom_token_flow");
+        }
+        let payload = serde_json::json!({
+            "accessToken": "cline-acc",
+            "refreshToken": "cline-ref",
+            "email": "dev@cline.bot",
+        })
+        .to_string();
+        let code = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &payload);
+        let (s, _, v) = body_json(
+            app,
+            Request::post("/api/oauth/cline/exchange")
+                .header("content-type", "application/json")
+                .body(Body::from(format!(r#"{{"code":"{code}"}}"#)))
+                .unwrap(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(v["connection"]["provider"], "cline");
+        assert_eq!(v["connection"]["email"], "dev@cline.bot");
     }
 
     #[tokio::test]

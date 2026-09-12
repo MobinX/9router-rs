@@ -88,6 +88,7 @@ fn test_spec(token_url: &str) -> OAuthSpec {
         fixed_port: Some(1455),
         callback_path: "/auth/callback".into(),
         device_flow: false,
+        refresh_url: None,
         extra_params: Default::default(),
         refresh_lead_ms: 0,
     }
