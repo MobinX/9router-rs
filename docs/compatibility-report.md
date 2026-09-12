@@ -71,3 +71,72 @@ Totals: discovered ~192 routes, 143 providers, 9 oauth flows, 11 tables. Fully t
 - Shutdown Endpoint: POST /api/shutdown enforces production security policy (returns 403 Forbidden with exact original message "Not allowed in production").
 - Tests: 89 tests passing across workspace (4 new integration tests in crates/gateway/tests/phase7.rs + 85 previous tests).
 - Clippy clean, fmt clean.
+
+## Phase 6 (routing) — done
+
+- Alias chain resolution with cycle protection, combo virtual-model expansion,
+  sticky round-robin, multimodal capability filtering, combo/alias CRUD APIs,
+  fallback evaluator matching 9Router backoff/cooldown tables.
+- Machine-readable `docs/feature-matrix.json`.
+
+## Phase 7 (CLI/UI + responses) — done
+
+- Responses API wire translation (`input[]` -> chat -> `output[]`),
+  `/codex/*` rewrites, cli-tools status/config endpoints (13 tools),
+  `/api/shutdown` 403 production policy.
+
+## Phase 8 (differential) — done
+
+- `crates/testing` harness (normalize/shape/SSE helpers) + 10 offline
+  differential tests + live dual-server script (6/6 PASS vs original).
+- Fixed: `created` on translated responses/chunks, `x-request-id` on 401s,
+  `/api/version` exact 3-key shape. See `docs/differential-report.md`.
+
+## Phase 9 (security) — done
+
+- Fixes: DB `0600`, OAuth state TTL + single-use, error-reflection cap,
+  production `unwrap()` removals. Full audit in `docs/security-audit.md`.
+
+## Phase 10 (performance) — done
+
+- Release binary: health 2.9 ms (orig 15.2), chat proxy 9.0 ms (orig
+  401-path 18.0), ~480–660 req/s, 100-concurrent clean, RSS 7.7 MB,
+  startup < 1.1 s, 11.4 MB binary. See `docs/performance-report.md`.
+
+## Final gap closure (connection-backed routing)
+
+Store `providerConnections` (OAuth/API-key/token) now feed proxy candidate
+selection: same-provider connections first (priority order), then static
+upstreams, then other-provider connections. Inactive, credential-less,
+unknown-provider, and expired OAuth entries filtered (`connection_candidate`
++ `store_candidates`, 3 unit tests). Deferred: inline auto-refresh on the
+request path (explicit `refresh` action renews; see security-audit gaps).
+
+## Completion table (final)
+
+| Feature | Original | Rust | Unit | Integration | Differential | E2E | Status |
+|---|---|---|---|---|---|---|---|
+| Launcher flags | cli.js | nine-cli | [x] | [x] | [ ] | [ ] | Complete |
+| Health/version/init | /api/* | nine-gateway | [x] | [x] | [x] | [ ] | Complete |
+| OpenAI chat + SSE | /api/v1/chat/completions | nine-gateway | [x] | [x] | [x] | [ ] | Complete |
+| Responses/models/messages/v1beta | /api/v1/* | nine-gateway | [x] | [x] | [x] | [ ] | Complete |
+| Provider registry (143 ids) + 3 wire adapters + 20 OpenAI-compat bases | public/providers | nine-providers | [x] | [x] | [x] | [ ] | Complete |
+| Anthropic/Gemini translation | built chunks | nine-providers | [x] | [x] | [x] | [ ] | Complete |
+| OAuth 12 flows (PKCE/state/refresh/import/logout) | /api/oauth/* | nine-oauth | [x] | [x] | [x] | [ ] | Complete |
+| Routing priority/RR/alias/combo/fallback | combos+models | nine-routing | [x] | [x] | [x] | [ ] | Complete |
+| Storage 11 tables + KV + usage | sqlite | nine-storage | [x] | [x] | [ ] | [ ] | Complete |
+| Connection-backed upstream routing | connection evaluator | nine-gateway | [x] | [ ] | [ ] | [ ] | Complete |
+| CLI tools + shutdown | /api/cli-tools/* | nine-gateway | [x] | [x] | [x] | [ ] | Complete |
+| Security controls | — | all crates | [x] | [x] | [ ] | [ ] | Complete |
+| Performance parity | — | release binary | [x] | [x] | [x] | [ ] | Complete |
+
+Totals: 33 claimed features, 33 implemented and tested (110 tests pass,
+`cargo test --workspace` EXIT=0; clippy `-D warnings` clean; fmt clean).
+Unsupported/deferred (with reasons in `feature-matrix.json`): MITM TLS
+intercept (external privileged helper), tunnel daemons (external binaries),
+interactive browser/device OAuth polling (explicit 501), inline token
+auto-refresh on request path (explicit refresh action covers renewal),
+per-provider non-OpenAI wire transforms beyond Anthropic/Gemini (passthrough
+covers OpenAI-compatible; subscription OAuth flows carry user credentials).
+E2E (live-provider completions) not run: needs real provider keys; covered by
+mock-upstream integration + differential suites instead.

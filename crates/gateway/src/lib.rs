@@ -1391,7 +1391,10 @@ async fn chat_completions(
             messages: messages.clone(),
             stream,
         };
-        let upstreams = upstream_candidates(&st, provider);
+        let (same, rest) = store_candidates(&st, provider).await;
+        let mut upstreams = same;
+        upstreams.extend(upstream_candidates(&st, provider));
+        upstreams.extend(rest);
         if upstreams.is_empty() {
             continue;
         }
@@ -1437,6 +1440,62 @@ async fn chat_completions(
         }),
         &req_id,
     )
+}
+
+/// Map one stored connection to an upstream candidate.
+/// Returns None for inactive connections, missing credentials, unknown
+/// providers, or expired OAuth tokens (renew via the refresh endpoint).
+fn connection_candidate(
+    c: &nine_storage::ProviderConnection,
+    now: i64,
+) -> Option<(String, String, String)> {
+    if !c.is_active {
+        return None;
+    }
+    let key = c
+        .data
+        .get("access_token")
+        .or_else(|| c.data.get("api_key"))
+        .and_then(|v| v.as_str())
+        .filter(|k| !k.is_empty())?;
+    if let Some(exp) = c.data.get("expires_at").and_then(|v| v.as_i64()) {
+        if exp < now {
+            return None;
+        }
+    }
+    let base = nine_providers::base_url_for(&c.provider);
+    if base.is_empty() {
+        return None;
+    }
+    Some((c.provider.clone(), base.to_string(), key.to_string()))
+}
+
+/// Stored-connection candidates, split into same-provider first, then the rest.
+async fn store_candidates(
+    st: &AppState,
+    provider: &str,
+) -> (Vec<(String, String, String)>, Vec<(String, String, String)>) {
+    let Some(store) = &st.store else {
+        return (vec![], vec![]);
+    };
+    let store = store.clone();
+    let rows = tokio::task::spawn_blocking(move || store.list_connections(None))
+        .await
+        .unwrap_or(Ok(vec![]))
+        .unwrap_or_default();
+    let now = chrono::Utc::now().timestamp();
+    let mut same = Vec::new();
+    let mut rest = Vec::new();
+    for c in &rows {
+        if let Some(row) = connection_candidate(c, now) {
+            if c.provider == provider {
+                same.push(row);
+            } else {
+                rest.push(row);
+            }
+        }
+    }
+    (same, rest)
 }
 
 /// Ordered fallback candidates: provider-prefix match first, then the rest.
@@ -2067,7 +2126,10 @@ async fn responses(State(st): State<Arc<AppState>>, headers: HeaderMap, body: By
             messages: messages.clone(),
             stream,
         };
-        let upstreams = upstream_candidates(&st, provider);
+        let (same, rest) = store_candidates(&st, provider).await;
+        let mut upstreams = same;
+        upstreams.extend(upstream_candidates(&st, provider));
+        upstreams.extend(rest);
         if upstreams.is_empty() {
             continue;
         }
@@ -2487,5 +2549,97 @@ mod tests {
         .await;
         assert_eq!(s2, StatusCode::BAD_REQUEST);
         assert_eq!(v2["error"]["code"], "invalid_json");
+    }
+}
+
+#[cfg(test)]
+mod connection_candidate_tests {
+    use super::*;
+
+    fn conn(provider: &str, data: serde_json::Value, active: bool) -> ProviderConnection {
+        ProviderConnection {
+            id: uuid::Uuid::new_v4().to_string(),
+            provider: provider.into(),
+            auth_type: "oauth".into(),
+            name: None,
+            email: None,
+            priority: None,
+            is_active: active,
+            data,
+            created_at: "t".into(),
+            updated_at: "t".into(),
+        }
+    }
+
+    #[test]
+    fn oauth_and_api_key_credentials_map() {
+        let now = chrono::Utc::now().timestamp();
+        let (p, base, key) = connection_candidate(
+            &conn(
+                "openai",
+                serde_json::json!({"access_token": "tok", "expires_at": now + 99}),
+                true,
+            ),
+            now,
+        )
+        .unwrap();
+        assert_eq!((p.as_str(), key.as_str()), ("openai", "tok"));
+        assert!(base.contains("openai.com"));
+        let (_, _, key) = connection_candidate(
+            &conn("groq", serde_json::json!({"api_key": "g"}), true),
+            now,
+        )
+        .unwrap();
+        assert_eq!(key, "g");
+    }
+
+    #[test]
+    fn inactive_expired_credentialless_unknown_filtered() {
+        let now = chrono::Utc::now().timestamp();
+        assert!(connection_candidate(
+            &conn(
+                "openai",
+                serde_json::json!({"access_token": "t", "expires_at": now + 9}),
+                false
+            ),
+            now,
+        )
+        .is_none());
+        assert!(connection_candidate(
+            &conn(
+                "openai",
+                serde_json::json!({"access_token": "t", "expires_at": now - 1}),
+                true
+            ),
+            now,
+        )
+        .is_none());
+        assert!(connection_candidate(&conn("openai", serde_json::json!({}), true), now).is_none());
+        assert!(connection_candidate(
+            &conn("mystery", serde_json::json!({"api_key": "k"}), true),
+            now,
+        )
+        .is_none());
+    }
+
+    #[tokio::test]
+    async fn store_candidates_split_same_provider_first() {
+        let store = std::sync::Arc::new(Store::open_memory().unwrap());
+        let now = chrono::Utc::now().timestamp();
+        for (p, tok) in [("groq", "g-key"), ("openai", "o-key")] {
+            store
+                .upsert_connection(&conn(
+                    p,
+                    serde_json::json!({"api_key": tok, "expires_at": now + 60}),
+                    true,
+                ))
+                .unwrap();
+        }
+        let st = AppState::new(vec![], 1000).with_store(store);
+        let (same, rest) = store_candidates(&st, "openai").await;
+        assert_eq!(same.len(), 1);
+        assert_eq!(same[0].2, "o-key");
+        assert_eq!(rest.len(), 1);
+        assert_eq!(rest[0].2, "g-key");
     }
 }

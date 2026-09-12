@@ -1,9 +1,9 @@
 {
   "version": "0.7.0",
-  "lastUpdated": "2026-09-12T18:31:13.894Z",
+  "lastUpdated": "2026-09-13",
   "summary": {
-    "totalClaimedFeatures": 32,
-    "implementedAndTested": 32,
+    "totalClaimedFeatures": 33,
+    "implementedAndTested": 33,
     "discoveredOnly": 0,
     "unsupportedOrDeferred": 3
   },
@@ -375,6 +375,19 @@
       "rustModule": "nine_gateway::shutdown",
       "tests": [
         "crates/gateway/tests/phase7.rs::shutdown_endpoint_matches_production_policy"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.connection-routing",
+      "name": "Connection-Backed Upstream Routing",
+      "endpoint": "POST /v1/chat/completions + /v1/responses + /v1/messages (store connections)",
+      "original": "app connection fallback evaluator (cooldown/backoff, 3558.js)",
+      "rustModule": "nine_gateway::store_candidates + connection_candidate",
+      "tests": [
+        "crates/gateway/src/lib.rs::connection_candidate_tests::oauth_and_api_key_credentials_map",
+        "crates/gateway/src/lib.rs::connection_candidate_tests::inactive_expired_credentialless_unknown_filtered",
+        "crates/gateway/src/lib.rs::connection_candidate_tests::store_candidates_split_same_provider_first"
       ],
       "status": "Verified"
     }
