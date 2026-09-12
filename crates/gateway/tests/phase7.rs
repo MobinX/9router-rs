@@ -4,7 +4,6 @@ use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::Router;
 use nine_gateway::{router_with_state, AppState, Upstream};
-use std::sync::Arc;
 use tower::ServiceExt;
 
 async fn spawn_mock_openai() -> String {

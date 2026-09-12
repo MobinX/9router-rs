@@ -960,6 +960,7 @@ dependencies = [
  "nine-providers",
  "nine-routing",
  "nine-storage",
+ "nine-testing",
  "reqwest",
  "serde",
  "serde_json",
@@ -990,6 +991,7 @@ dependencies = [
 name = "nine-providers"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "nine-core",
  "serde",
  "serde_json",
@@ -1017,6 +1019,13 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "nine-testing"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

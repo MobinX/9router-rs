@@ -189,12 +189,12 @@ async fn health() -> impl IntoResponse {
 }
 
 async fn version(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    // Shape matches original exactly: {currentVersion, latestVersion, hasUpdate}.
+    let _ = &st.version;
     Json(serde_json::json!({
-        "version": st.version,
         "currentVersion": st.version,
         "latestVersion": "0.5.75",
-        "hasUpdate": false,
-        "upstream": "0.5.75"
+        "hasUpdate": false
     }))
 }
 
@@ -1296,10 +1296,10 @@ async fn chat_completions(
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    if let Some(r) = authorize(&st, &headers, None) {
-        return r;
-    }
     let req_id = nine_core::new_request_id();
+    if let Some(r) = authorize(&st, &headers, None) {
+        return with_id(r, &req_id);
+    }
     let v: serde_json::Value = match serde_json::from_slice(&body) {
         Ok(v) => v,
         Err(_) => {
@@ -1690,10 +1690,10 @@ fn translate_sse_stream(
 // ─── Anthropic /v1/messages ───────────────────────────────────────────────
 
 async fn messages(State(st): State<Arc<AppState>>, headers: HeaderMap, body: Bytes) -> Response {
-    if let Some(r) = authorize(&st, &headers, None) {
-        return r;
-    }
     let req_id = nine_core::new_request_id();
+    if let Some(r) = authorize(&st, &headers, None) {
+        return with_id(r, &req_id);
+    }
     let v: serde_json::Value = match serde_json::from_slice(&body) {
         Ok(v) => v,
         Err(_) => {
@@ -1795,10 +1795,10 @@ async fn gemini_generate(
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    if let Some(r) = authorize(&st, &headers, Some(&query)) {
-        return r;
-    }
     let req_id = nine_core::new_request_id();
+    if let Some(r) = authorize(&st, &headers, Some(&query)) {
+        return with_id(r, &req_id);
+    }
     let payload: serde_json::Value = match serde_json::from_slice(&body) {
         Ok(v) => v,
         Err(_) => {
@@ -1973,10 +1973,10 @@ fn completion_to_response_format(completion: &Value, model: &str, req_id: &str) 
 }
 
 async fn responses(State(st): State<Arc<AppState>>, headers: HeaderMap, body: Bytes) -> Response {
-    if let Some(r) = authorize(&st, &headers, None) {
-        return r;
-    }
     let req_id = nine_core::new_request_id();
+    if let Some(r) = authorize(&st, &headers, None) {
+        return with_id(r, &req_id);
+    }
     let v: Value = match serde_json::from_slice(&body) {
         Ok(v) => v,
         Err(_) => {

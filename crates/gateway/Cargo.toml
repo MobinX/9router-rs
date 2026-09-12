@@ -23,4 +23,5 @@ nine-providers = { path = "../providers" }
 nine-oauth = { path = "../oauth" }
 nine-routing = { path = "../routing" }
 [dev-dependencies]
+nine-testing = { path = "../testing" }
 tower.workspace = true

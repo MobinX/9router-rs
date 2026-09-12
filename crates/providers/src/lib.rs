@@ -305,6 +305,7 @@ pub fn translate_anthropic_response(v: &Value, model: &str, req_id: &str) -> Val
     json!({
         "id": v.get("id").and_then(|i| i.as_str()).unwrap_or(req_id),
         "object": "chat.completion",
+        "created": chrono::Utc::now().timestamp(),
         "model": nine_core::normalize_model_id(model),
         "choices": [{"index": 0, "message": message, "finish_reason": map_anthropic_stop(stop)}],
         "usage": {"prompt_tokens": input, "completion_tokens": output, "total_tokens": input + output},
@@ -356,6 +357,7 @@ pub fn translate_gemini_response(v: &Value, model: &str, req_id: &str) -> Value 
     json!({
         "id": req_id,
         "object": "chat.completion",
+        "created": chrono::Utc::now().timestamp(),
         "model": nine_core::normalize_model_id(model),
         "choices": [{"index": 0, "message": message, "finish_reason": map_gemini_finish(reason)}],
         "usage": {"prompt_tokens": input, "completion_tokens": output, "total_tokens": input + output},
@@ -373,6 +375,7 @@ pub fn translate_anthropic_sse(event: &Value, model: &str, req_id: &str) -> Vec<
         json!({
             "id": req_id,
             "object": "chat.completion.chunk",
+            "created": chrono::Utc::now().timestamp(),
             "model": nine_core::normalize_model_id(model),
             "choices": [{"index": 0, "delta": delta, "finish_reason": finish}],
         })
@@ -421,6 +424,7 @@ pub fn translate_gemini_sse(chunk: &Value, model: &str, req_id: &str) -> Value {
     json!({
         "id": req_id,
         "object": "chat.completion.chunk",
+        "created": chrono::Utc::now().timestamp(),
         "model": nine_core::normalize_model_id(model),
         "choices": [{
             "index": 0,
