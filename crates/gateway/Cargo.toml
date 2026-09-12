@@ -1,0 +1,23 @@
+[package]
+name = "nine-gateway"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+tokio.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tower-http.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+reqwest.workspace = true
+nine-core = { path = "../core" }
+nine-config = { path = "../config" }
+nine-storage = { path = "../storage" }
+nine-providers = { path = "../providers" }
+nine-oauth = { path = "../oauth" }
+nine-routing = { path = "../routing" }
+[dev-dependencies]
+tower.workspace = true

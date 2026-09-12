@@ -1,0 +1,11 @@
+[package]
+name = "nine-routing"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+nine-core = { path = "../core" }
+[dev-dependencies]
+proptest.workspace = true

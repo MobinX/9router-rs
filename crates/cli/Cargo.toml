@@ -1,0 +1,18 @@
+[package]
+name = "nine-cli"
+version = "0.1.0"
+edition = "2021"
+[[bin]]
+name = "9router-rs"
+path = "src/main.rs"
+[dependencies]
+tokio.workspace = true
+axum.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde_json.workspace = true
+nine-core = { path = "../core" }
+nine-config = { path = "../config" }
+nine-storage = { path = "../storage" }
+nine-gateway = { path = "../gateway" }
