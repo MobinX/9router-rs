@@ -29,3 +29,13 @@ Totals: discovered ~192 routes, 143 providers, 9 oauth flows, 11 tables. Fully t
 - Tests: 49 pass (8 adapter mock-integration incl. streaming + errors; 11 gateway; 11 providers; routing/config/storage/core).
 - clippy `-D warnings` clean, fmt clean.
 - Deferred: `/v1/responses` (501 stub), embeddings/audio/images/video/search media endpoints, connections from DB (Phase 6), differential parity for model count (needs connections).
+
+### Phase 4 live smoke (vs original on :20128)
+
+| Check | Original | Rust |
+|---|---|---|
+| GET /api/health | {ok:true} | {ok:true} |
+| GET /v1/models/info (no id) | 400 invalid_request_error + same message | identical |
+| GET /v1beta/models | {models:[{name,displayName,description,supportedGenerationMethods,inputTokenLimit,outputTokenLimit}]} | identical shape |
+| POST /v1/messages bad key | 401 {error:{message,type,code}} | identical envelope |
+| POST /v1/chat/completions bad key | 401 {error:{message,type,code}} | identical envelope |
