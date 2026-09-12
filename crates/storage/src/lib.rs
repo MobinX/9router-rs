@@ -50,7 +50,21 @@ pub fn is_valid_api_key(conn: &Connection, key: &str) -> Result<bool, DbError> {
     Ok(n > 0)
 }
 
-/// A provider credential/account row, mirroring the original \`providerConnections\`.
+/// A model combo configuration representing a virtual model routing to a sequence of models.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Combo {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub kind: Option<String>,
+    pub models: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+}
+
+/// A provider credential/account row, mirroring the original `providerConnections`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProviderConnection {
     pub id: String,
@@ -233,6 +247,131 @@ impl Store {
         )?)
     }
 
+    pub fn list_combos(&self) -> Result<Vec<Combo>, DbError> {
+        let conn = self.lock()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, name, kind, models, createdAt, updatedAt FROM combos ORDER BY name",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            let models_json: String = r.get(3)?;
+            let models: Vec<String> = serde_json::from_str(&models_json).unwrap_or_default();
+            Ok(Combo {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                kind: r.get(2)?,
+                models,
+                created_at: r.get(4)?,
+                updated_at: r.get(5)?,
+            })
+        })?;
+        Ok(rows.filter_map(Result::ok).collect())
+    }
+
+    pub fn get_combo(&self, id: &str) -> Result<Option<Combo>, DbError> {
+        let conn = self.lock()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, name, kind, models, createdAt, updatedAt FROM combos WHERE id = ?1",
+        )?;
+        let mut rows = stmt.query(params![id])?;
+        if let Some(r) = rows.next()? {
+            let models_json: String = r.get(3)?;
+            let models: Vec<String> = serde_json::from_str(&models_json).unwrap_or_default();
+            Ok(Some(Combo {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                kind: r.get(2)?,
+                models,
+                created_at: r.get(4)?,
+                updated_at: r.get(5)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_combo_by_name(&self, name: &str) -> Result<Option<Combo>, DbError> {
+        let conn = self.lock()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, name, kind, models, createdAt, updatedAt FROM combos WHERE name = ?1",
+        )?;
+        let mut rows = stmt.query(params![name])?;
+        if let Some(r) = rows.next()? {
+            let models_json: String = r.get(3)?;
+            let models: Vec<String> = serde_json::from_str(&models_json).unwrap_or_default();
+            Ok(Some(Combo {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                kind: r.get(2)?,
+                models,
+                created_at: r.get(4)?,
+                updated_at: r.get(5)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn upsert_combo(&self, c: &Combo) -> Result<(), DbError> {
+        let conn = self.lock()?;
+        let models_json = serde_json::to_string(&c.models)?;
+        conn.execute(
+            "INSERT INTO combos (id, name, kind, models, createdAt, updatedAt)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(id) DO UPDATE SET name=excluded.name, kind=excluded.kind,
+               models=excluded.models, updatedAt=excluded.updatedAt",
+            params![
+                c.id,
+                c.name,
+                c.kind,
+                models_json,
+                c.created_at,
+                c.updated_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_combo(&self, id: &str) -> Result<usize, DbError> {
+        let conn = self.lock()?;
+        Ok(conn.execute("DELETE FROM combos WHERE id = ?1", params![id])?)
+    }
+
+    pub fn get_model_aliases(&self) -> Result<std::collections::HashMap<String, String>, DbError> {
+        let conn = self.lock()?;
+        let mut stmt = conn.prepare("SELECT key, value FROM kv WHERE scope = 'modelAliases'")?;
+        let rows = stmt.query_map([], |r| {
+            let k: String = r.get(0)?;
+            let v: String = r.get(1)?;
+            // If value is a JSON string (e.g. ""target""), unwrap it
+            let target: String = serde_json::from_str(&v).unwrap_or(v);
+            Ok((k, target))
+        })?;
+        let mut map = std::collections::HashMap::new();
+        for r in rows.filter_map(Result::ok) {
+            map.insert(r.0, r.1);
+        }
+        Ok(map)
+    }
+
+    pub fn set_model_alias(&self, alias: &str, target: &str) -> Result<(), DbError> {
+        let conn = self.lock()?;
+        let val = serde_json::to_string(target)?;
+        conn.execute(
+            "INSERT INTO kv (scope, key, value) VALUES ('modelAliases', ?1, ?2)
+             ON CONFLICT(scope, key) DO UPDATE SET value = excluded.value",
+            params![alias, val],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_model_alias(&self, alias: &str) -> Result<usize, DbError> {
+        let conn = self.lock()?;
+        Ok(conn.execute(
+            "DELETE FROM kv WHERE scope = 'modelAliases' AND key = ?1",
+            params![alias],
+        )?)
+    }
+
     pub fn record_usage(
         &self,
         provider: &str,
@@ -368,6 +507,58 @@ mod tests {
         );
         assert_eq!(s.kv_delete("oauth_state", "st").unwrap(), 1);
         assert!(s.kv_get("oauth_state", "st").unwrap().is_none());
+    }
+
+    #[test]
+    fn combo_crud_lifecycle() {
+        let s = Store::open_memory().unwrap();
+        let c = Combo {
+            id: "combo-1".into(),
+            name: "fast-blend".into(),
+            kind: Some("llm".into()),
+            models: vec!["gpt-4o-mini".into(), "claude-3-5-haiku".into()],
+            created_at: "2026-09-13T00:00:00Z".into(),
+            updated_at: "2026-09-13T00:00:00Z".into(),
+        };
+        s.upsert_combo(&c).unwrap();
+        let list = s.list_combos().unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].name, "fast-blend");
+        assert_eq!(list[0].models.len(), 2);
+
+        let by_name = s.get_combo_by_name("fast-blend").unwrap().unwrap();
+        assert_eq!(by_name.id, "combo-1");
+
+        let by_id = s.get_combo("combo-1").unwrap().unwrap();
+        assert_eq!(by_id.name, "fast-blend");
+
+        assert_eq!(s.delete_combo("combo-1").unwrap(), 1);
+        assert!(s.get_combo("combo-1").unwrap().is_none());
+    }
+
+    #[test]
+    fn model_alias_crud_lifecycle() {
+        let s = Store::open_memory().unwrap();
+        s.set_model_alias("gpt", "openai/gpt-4o").unwrap();
+        s.set_model_alias("claude", "anthropic/claude-sonnet-4-6")
+            .unwrap();
+        let aliases = s.get_model_aliases().unwrap();
+        assert_eq!(
+            aliases.get("gpt").map(|s| s.as_str()),
+            Some("openai/gpt-4o")
+        );
+        assert_eq!(
+            aliases.get("claude").map(|s| s.as_str()),
+            Some("anthropic/claude-sonnet-4-6")
+        );
+
+        assert_eq!(s.delete_model_alias("gpt").unwrap(), 1);
+        let updated = s.get_model_aliases().unwrap();
+        assert_eq!(updated.get("gpt"), None);
+        assert_eq!(
+            updated.get("claude").map(|s| s.as_str()),
+            Some("anthropic/claude-sonnet-4-6")
+        );
     }
 
     #[test]

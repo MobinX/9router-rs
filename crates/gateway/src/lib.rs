@@ -9,6 +9,7 @@ use axum::{
 use futures_util::StreamExt;
 use nine_providers::{ApiStyle, ModelEntry, Provider};
 use nine_storage::{ProviderConnection, Store};
+use serde::Deserialize;
 use serde_json::Value;
 use std::sync::Arc;
 use std::time::Duration;
@@ -36,6 +37,10 @@ pub struct AppState {
     pub oauth_specs: Arc<Vec<nine_oauth::OAuthSpec>>,
     pub data_dir: String,
     pub callback_base: String,
+    pub router_srr: Arc<nine_routing::StickyRoundRobin>,
+    pub sticky_limit: usize,
+    pub static_combos: Arc<Vec<nine_routing::ComboTarget>>,
+    pub static_aliases: Arc<std::collections::HashMap<String, String>>,
 }
 
 impl AppState {
@@ -54,6 +59,10 @@ impl AppState {
                 .map(|h| format!("{h}/.9router"))
                 .unwrap_or_else(|_| ".".into()),
             callback_base: "http://127.0.0.1:20128".into(),
+            router_srr: Arc::new(nine_routing::StickyRoundRobin::new()),
+            sticky_limit: 1,
+            static_combos: Arc::new(Vec::new()),
+            static_aliases: Arc::new(std::collections::HashMap::new()),
         }
     }
 
@@ -69,6 +78,21 @@ impl AppState {
 
     pub fn with_oauth_specs(mut self, specs: Vec<nine_oauth::OAuthSpec>) -> Self {
         self.oauth_specs = Arc::new(specs);
+        self
+    }
+
+    pub fn with_combos(mut self, combos: Vec<nine_routing::ComboTarget>) -> Self {
+        self.static_combos = Arc::new(combos);
+        self
+    }
+
+    pub fn with_aliases(mut self, aliases: std::collections::HashMap<String, String>) -> Self {
+        self.static_aliases = Arc::new(aliases);
+        self
+    }
+
+    pub fn with_sticky_limit(mut self, limit: usize) -> Self {
+        self.sticky_limit = limit;
         self
     }
 
@@ -138,6 +162,17 @@ pub fn router_with_state(state: AppState) -> Router {
         .route("/api/settings", get(settings))
         .route("/api/auth/status", get(auth_status))
         .route("/api/keys", get(keys))
+        .route("/api/combos", get(list_combos).post(create_combo))
+        .route(
+            "/api/combos/:id",
+            get(get_combo).put(update_combo).delete(delete_combo),
+        )
+        .route(
+            "/api/models/alias",
+            get(get_model_aliases)
+                .put(put_model_alias)
+                .delete(delete_model_alias),
+        )
         .with_state(Arc::new(state))
 }
 
@@ -953,6 +988,278 @@ async fn map_upstream_err(status: u16, resp: reqwest::Response) -> Response {
     err(status, &msg, typ, code)
 }
 
+// ─── Combos Endpoints ─────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct CreateComboReq {
+    name: Option<String>,
+    #[serde(default)]
+    models: Vec<String>,
+    #[serde(default)]
+    kind: Option<String>,
+}
+
+fn valid_combo_name(name: &str) -> bool {
+    !name.is_empty()
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+}
+
+async fn list_combos(State(st): State<Arc<AppState>>) -> Response {
+    if let Some(store) = &st.store {
+        let store = store.clone();
+        let res = tokio::task::spawn_blocking(move || store.list_combos()).await;
+        match res {
+            Ok(Ok(combos)) => Json(serde_json::json!({ "combos": combos })).into_response(),
+            _ => err(500, "Failed to fetch combos", "internal_error", "db_error"),
+        }
+    } else {
+        let combos: Vec<Value> = st
+            .static_combos
+            .iter()
+            .map(|c| {
+                serde_json::json!({
+                    "id": c.id, "name": c.name, "models": c.models, "kind": null,
+                    "createdAt": chrono::Utc::now().to_rfc3339(),
+                    "updatedAt": chrono::Utc::now().to_rfc3339(),
+                })
+            })
+            .collect();
+        Json(serde_json::json!({ "combos": combos })).into_response()
+    }
+}
+
+async fn create_combo(
+    State(st): State<Arc<AppState>>,
+    Json(body): Json<CreateComboReq>,
+) -> Response {
+    let Some(name) = body.name.filter(|n| !n.is_empty()) else {
+        return err(
+            400,
+            "Name is required",
+            "invalid_request_error",
+            "invalid_name",
+        );
+    };
+    if !valid_combo_name(&name) {
+        return err(
+            400,
+            "Name can only contain letters, numbers, -, _ and .",
+            "invalid_request_error",
+            "invalid_name",
+        );
+    }
+    let combo = nine_storage::Combo {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: name.clone(),
+        kind: body.kind,
+        models: body.models,
+        created_at: chrono::Utc::now().to_rfc3339(),
+        updated_at: chrono::Utc::now().to_rfc3339(),
+    };
+    if let Some(store) = &st.store {
+        let store = store.clone();
+        let c = combo.clone();
+        let res = tokio::task::spawn_blocking(move || -> Result<bool, nine_storage::DbError> {
+            if store.get_combo_by_name(&c.name)?.is_some() {
+                return Ok(false);
+            }
+            store.upsert_combo(&c)?;
+            Ok(true)
+        })
+        .await;
+        match res {
+            Ok(Ok(true)) => (StatusCode::CREATED, Json(combo)).into_response(),
+            Ok(Ok(false)) => err(
+                400,
+                "Combo name already exists",
+                "invalid_request_error",
+                "name_exists",
+            ),
+            _ => err(500, "Failed to create combo", "internal_error", "db_error"),
+        }
+    } else {
+        (StatusCode::CREATED, Json(combo)).into_response()
+    }
+}
+
+async fn get_combo(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> Response {
+    if let Some(store) = &st.store {
+        let store = store.clone();
+        let cid = id.clone();
+        match tokio::task::spawn_blocking(move || store.get_combo(&cid)).await {
+            Ok(Ok(Some(c))) => Json(c).into_response(),
+            Ok(Ok(None)) => err(404, "Combo not found", "not_found_error", "combo_not_found"),
+            _ => err(500, "Failed to fetch combo", "internal_error", "db_error"),
+        }
+    } else {
+        match st.static_combos.iter().find(|c| c.id == id) {
+            Some(c) => Json(serde_json::json!({
+                "id": c.id, "name": c.name, "models": c.models, "kind": null,
+            }))
+            .into_response(),
+            None => err(404, "Combo not found", "not_found_error", "combo_not_found"),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct UpdateComboReq {
+    name: Option<String>,
+    models: Option<Vec<String>>,
+    kind: Option<String>,
+}
+
+async fn update_combo(
+    State(st): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(body): Json<UpdateComboReq>,
+) -> Response {
+    if let Some(ref name) = body.name {
+        if !valid_combo_name(name) {
+            return err(
+                400,
+                "Name can only contain letters, numbers, -, _ and .",
+                "invalid_request_error",
+                "invalid_name",
+            );
+        }
+    }
+    let Some(store) = &st.store else {
+        return err(501, "Database not configured", "not_implemented", "no_db");
+    };
+    let store = store.clone();
+    let cid = id.clone();
+    let res = tokio::task::spawn_blocking(
+        move || -> Result<Option<nine_storage::Combo>, nine_storage::DbError> {
+            let Some(mut existing) = store.get_combo(&cid)? else {
+                return Ok(None);
+            };
+            if let Some(ref new_name) = body.name {
+                if new_name != &existing.name {
+                    if let Some(other) = store.get_combo_by_name(new_name)? {
+                        if other.id != cid {
+                            return Ok(Some(existing));
+                        }
+                    }
+                    existing.name = new_name.clone();
+                }
+            }
+            if let Some(models) = body.models {
+                existing.models = models;
+            }
+            if let Some(kind) = body.kind {
+                existing.kind = Some(kind);
+            }
+            existing.updated_at = chrono::Utc::now().to_rfc3339();
+            store.upsert_combo(&existing)?;
+            Ok(Some(existing))
+        },
+    )
+    .await;
+
+    match res {
+        Ok(Ok(Some(c))) => Json(c).into_response(),
+        Ok(Ok(None)) => err(404, "Combo not found", "not_found_error", "combo_not_found"),
+        Ok(Err(_)) => err(500, "Failed to update combo", "internal_error", "db_error"),
+        _ => err(500, "Failed to update combo", "internal_error", "db_error"),
+    }
+}
+
+async fn delete_combo(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> Response {
+    let Some(store) = &st.store else {
+        return err(501, "Database not configured", "not_implemented", "no_db");
+    };
+    let store = store.clone();
+    let cid = id.clone();
+    let res = tokio::task::spawn_blocking(move || store.delete_combo(&cid)).await;
+    match res {
+        Ok(Ok(n)) if n > 0 => Json(serde_json::json!({ "success": true })).into_response(),
+        Ok(Ok(_)) => err(404, "Combo not found", "not_found_error", "combo_not_found"),
+        _ => err(500, "Failed to delete combo", "internal_error", "db_error"),
+    }
+}
+
+// ─── Model Aliases Endpoints ──────────────────────────────────────────────
+
+async fn get_model_aliases(State(st): State<Arc<AppState>>) -> Response {
+    if let Some(store) = &st.store {
+        let store = store.clone();
+        match tokio::task::spawn_blocking(move || store.get_model_aliases()).await {
+            Ok(Ok(aliases)) => Json(serde_json::json!({ "aliases": aliases })).into_response(),
+            _ => err(500, "Failed to fetch aliases", "internal_error", "db_error"),
+        }
+    } else {
+        Json(serde_json::json!({ "aliases": *st.static_aliases })).into_response()
+    }
+}
+
+#[derive(Deserialize)]
+struct PutAliasReq {
+    model: Option<String>,
+    alias: Option<String>,
+}
+
+async fn put_model_alias(
+    State(st): State<Arc<AppState>>,
+    Json(body): Json<PutAliasReq>,
+) -> Response {
+    let (Some(model), Some(alias)) = (body.model, body.alias) else {
+        return err(
+            400,
+            "Model and alias required",
+            "invalid_request_error",
+            "missing_fields",
+        );
+    };
+    if let Some(store) = &st.store {
+        let store = store.clone();
+        let m = model.clone();
+        let a = alias.clone();
+        let res = tokio::task::spawn_blocking(move || store.set_model_alias(&a, &m)).await;
+        match res {
+            Ok(Ok(())) => {
+                Json(serde_json::json!({ "success": true, "model": model, "alias": alias }))
+                    .into_response()
+            }
+            _ => err(500, "Failed to update alias", "internal_error", "db_error"),
+        }
+    } else {
+        Json(serde_json::json!({ "success": true, "model": model, "alias": alias })).into_response()
+    }
+}
+
+#[derive(Deserialize)]
+struct DeleteAliasQuery {
+    alias: Option<String>,
+}
+
+async fn delete_model_alias(
+    State(st): State<Arc<AppState>>,
+    Query(q): Query<DeleteAliasQuery>,
+) -> Response {
+    let Some(alias) = q.alias else {
+        return err(
+            400,
+            "Alias required",
+            "invalid_request_error",
+            "missing_alias",
+        );
+    };
+    if let Some(store) = &st.store {
+        let store = store.clone();
+        let a = alias.clone();
+        let res = tokio::task::spawn_blocking(move || store.delete_model_alias(&a)).await;
+        match res {
+            Ok(Ok(_)) => Json(serde_json::json!({ "success": true })).into_response(),
+            _ => err(500, "Failed to delete alias", "internal_error", "db_error"),
+        }
+    } else {
+        Json(serde_json::json!({ "success": true })).into_response()
+    }
+}
+
 // ─── Chat completions ─────────────────────────────────────────────────────
 
 fn parse_messages(v: &serde_json::Value) -> Vec<nine_providers::ChatMessage> {
@@ -994,66 +1301,103 @@ async fn chat_completions(
             )
         }
     };
-    let model = v
+    let raw_model = v
         .get("model")
         .and_then(|m| m.as_str())
         .unwrap_or("gpt-4o")
         .to_string();
     let stream = v.get("stream").and_then(|s| s.as_bool()).unwrap_or(false);
-    let (prefix, bare) = nine_core::split_provider_model(&model);
-    let provider = prefix.unwrap_or_else(|| nine_providers::infer_provider(bare));
-    let chat_req = nine_providers::ChatRequest {
-        model: bare.to_string(),
-        messages: parse_messages(&v),
-        stream,
+
+    // 1. Alias resolution chain
+    let aliases = if let Some(store) = &st.store {
+        let store = store.clone();
+        tokio::task::spawn_blocking(move || store.get_model_aliases().unwrap_or_default())
+            .await
+            .unwrap_or_default()
+    } else {
+        (*st.static_aliases).clone()
     };
-    let candidates = upstream_candidates(&st, provider);
-    if candidates.is_empty() {
-        return with_id(
-            err(
-                502,
-                "no upstream configured",
-                "upstream_error",
-                "no_upstream",
-            ),
-            &req_id,
-        );
-    }
-    let mut last: Option<Response> = None;
-    for (cand_provider, base, key) in &candidates {
-        let payload = match nine_providers::api_style(cand_provider) {
-            ApiStyle::Anthropic => nine_providers::AnthropicAdapter.translate_request(&chat_req),
-            ApiStyle::Gemini => nine_providers::GeminiAdapter.translate_request(&chat_req),
-            ApiStyle::OpenAi => nine_providers::OpenAiPassthrough {
-                provider_id: "openai",
-                base_url: "",
-            }
-            .translate_request(&chat_req),
+    let resolved_model = nine_routing::resolve_alias_chain(&raw_model, &aliases);
+
+    // 2. Combo expansion & sticky round-robin
+    let combos = if let Some(store) = &st.store {
+        let store = store.clone();
+        tokio::task::spawn_blocking(move || store.list_combos().unwrap_or_default())
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|c| nine_routing::ComboTarget {
+                id: c.id,
+                name: c.name,
+                models: c.models,
+            })
+            .collect()
+    } else {
+        (*st.static_combos).clone()
+    };
+
+    let model_candidates =
+        if let Some(expanded) = nine_routing::expand_combo(&resolved_model, &combos) {
+            st.router_srr
+                .select(&resolved_model, &expanded, st.sticky_limit)
+        } else {
+            vec![resolved_model.clone()]
         };
-        let url = nine_providers::chat_url(cand_provider, base, bare);
-        match try_upstream(
-            &st,
-            &req_id,
-            &model,
-            cand_provider,
-            &url,
-            key,
-            payload,
+
+    let messages = parse_messages(&v);
+    let mut last: Option<Response> = None;
+
+    // 3. Fallback execution across combo model candidates
+    for cand_model in &model_candidates {
+        let (prefix, bare) = nine_core::split_provider_model(cand_model);
+        let provider = prefix.unwrap_or_else(|| nine_providers::infer_provider(bare));
+        let chat_req = nine_providers::ChatRequest {
+            model: bare.to_string(),
+            messages: messages.clone(),
             stream,
-        )
-        .await
-        {
-            Ok(resp) => return resp,
-            Err(resp) => last = Some(*resp),
+        };
+        let upstreams = upstream_candidates(&st, provider);
+        if upstreams.is_empty() {
+            continue;
+        }
+        for (cand_provider, base, key) in &upstreams {
+            let payload = match nine_providers::api_style(cand_provider) {
+                ApiStyle::Anthropic => {
+                    nine_providers::AnthropicAdapter.translate_request(&chat_req)
+                }
+                ApiStyle::Gemini => nine_providers::GeminiAdapter.translate_request(&chat_req),
+                ApiStyle::OpenAi => nine_providers::OpenAiPassthrough {
+                    provider_id: "openai",
+                    base_url: "",
+                }
+                .translate_request(&chat_req),
+            };
+            let url = nine_providers::chat_url(cand_provider, base, bare);
+            match try_upstream(
+                &st,
+                &req_id,
+                cand_model,
+                cand_provider,
+                &url,
+                key,
+                payload,
+                stream,
+            )
+            .await
+            {
+                Ok(resp) => return resp,
+                Err(resp) => last = Some(*resp),
+            }
         }
     }
+
     with_id(
         last.unwrap_or_else(|| {
             err(
                 502,
-                "all upstreams failed",
+                "all model candidates and upstreams failed",
                 "upstream_error",
-                "upstream_error",
+                "no_upstream",
             )
         }),
         &req_id,

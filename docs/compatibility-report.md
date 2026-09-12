@@ -47,3 +47,17 @@ Totals: discovered ~192 routes, 143 providers, 9 oauth flows, 11 tables. Fully t
 - gateway: `/api/oauth/:provider`, `/api/oauth/callback`, `/api/oauth/:provider/:action` (exchange, refresh, import-token, api-key, logout), `/api/providers` connection list, `/api/usage/stats` totals.
 - Tests: 74 pass across workspace (10 integration tests against mock token server; unit tests for PKCE, state, storage, parsing, account selection).
 - Clippy clean, fmt clean.
+
+## Phase 6 (Routing & Model Combos) — done
+
+- Model Alias Engine: single & multi-step chain resolution (`resolve_alias_chain`), cycle detection protection (`max_depth = 10`), persistent SQLite storage in `kv` table under `modelAliases`.
+- Model Alias HTTP API: `GET /api/models/alias`, `PUT /api/models/alias`, `DELETE /api/models/alias?alias=`.
+- Combo Virtual Models: combo definition with member sequence, combo resolution (`expand_combo`, slashes rejected), persistent SQLite storage in `combos` table.
+- Combo HTTP API: `GET /api/combos`, `POST /api/combos`, `GET /api/combos/:id`, `PUT /api/combos/:id`, `DELETE /api/combos/:id`.
+- Combo Fallback Loop: automatic fallback across combo member models when primary model fails with retryable error (rate limit, overloaded, 5xx).
+- Sticky Round-Robin (`StickyRoundRobin`): per-combo rotation with configurable `sticky_limit` matching 9Router upstream logic.
+- Multimodal Capability Filtering (`filter_by_capability`): filters combo candidate pool when request contains images, audio, video, or PDF attachments.
+- Advanced Error Evaluator (`evaluate_fallback`): parses status codes and text bodies for `rate limit`, `too many requests`, `quota exceeded`, `overloaded`, `capacity` with exponential backoff (`base: 2000ms`, `max: 300000ms`, `max_level: 15`), and fixed cooldowns (120s / 30s / 5s).
+- Selection Strategies: priority-based (`pick_connection`), round-robin (`round_robin`), weighted selection (`pick_weighted`).
+- Tests: 85 tests passing across workspace (4 gateway routing integration tests, 10 routing unit/proptests, 8 storage unit tests, plus all previous provider/gateway/oauth tests).
+- Machine-Readable Coverage Matrix: created `docs/feature-matrix.json` and updated `docs/feature-matrix.md`.

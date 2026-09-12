@@ -1,0 +1,355 @@
+{
+  "version": "0.6.0",
+  "lastUpdated": "2026-09-12T18:18:45.133Z",
+  "summary": {
+    "totalClaimedFeatures": 28,
+    "implementedAndTested": 28,
+    "discoveredOnly": 0,
+    "unsupportedOrDeferred": 4
+  },
+  "features": [
+    {
+      "id": "gateway.health",
+      "name": "Health Endpoint",
+      "endpoint": "GET /api/health",
+      "original": "app/src/app/api/health",
+      "rustModule": "nine_gateway::health",
+      "tests": [
+        "crates/gateway/src/lib.rs::tests::health_ok"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.version",
+      "name": "Version Endpoint",
+      "endpoint": "GET /api/version",
+      "original": "app/src/app/api/version",
+      "rustModule": "nine_gateway::version",
+      "tests": [
+        "crates/gateway/src/lib.rs::tests::version"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.models.list",
+      "name": "OpenAI Models List",
+      "endpoint": "GET /v1/models, GET /api/v1/models",
+      "original": "app/src/app/api/v1/models",
+      "rustModule": "nine_gateway::models",
+      "tests": [
+        "crates/gateway/src/lib.rs::tests::models_public_list"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.models.info",
+      "name": "Model Info by ID",
+      "endpoint": "GET /v1/models/info, GET /api/v1/models/info",
+      "original": "app/src/app/api/v1/models/info",
+      "rustModule": "nine_gateway::model_info",
+      "tests": [
+        "crates/gateway/src/lib.rs::tests::model_info_requires_id",
+        "crates/gateway/src/lib.rs::tests::model_info_found_and_missing"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.v1beta.models",
+      "name": "Gemini Models List",
+      "endpoint": "GET /v1beta/models",
+      "original": "app/src/app/api/v1beta/models",
+      "rustModule": "nine_gateway::gemini_models",
+      "tests": [
+        "crates/gateway/src/lib.rs::tests::gemini_models_shape"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.chat.completions.json",
+      "name": "Chat Completions JSON",
+      "endpoint": "POST /v1/chat/completions",
+      "original": "app/src/app/api/v1/chat/completions",
+      "rustModule": "nine_gateway::chat_completions",
+      "tests": [
+        "crates/gateway/tests/proxy.rs::non_stream_passthrough_shape",
+        "crates/gateway/tests/adapters.rs::anthropic_translates_to_openai_shape",
+        "crates/gateway/tests/adapters.rs::gemini_translates_to_openai_shape"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.chat.completions.sse",
+      "name": "Chat Completions SSE Stream",
+      "endpoint": "POST /v1/chat/completions (stream=true)",
+      "original": "app/src/app/api/v1/chat/completions",
+      "rustModule": "nine_gateway::passthrough_sse, translate_sse_stream",
+      "tests": [
+        "crates/gateway/tests/proxy.rs::sse_bytes_passthrough",
+        "crates/gateway/tests/adapters.rs::anthropic_stream_translates_to_openai_chunks"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.messages",
+      "name": "Anthropic Messages Native & Stream",
+      "endpoint": "POST /v1/messages",
+      "original": "app/src/app/api/v1/messages",
+      "rustModule": "nine_gateway::messages",
+      "tests": [
+        "crates/gateway/tests/adapters.rs::messages_endpoint_passthrough",
+        "crates/gateway/tests/adapters.rs::messages_stream_passthrough_keeps_anthropic_events"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.gemini_generate",
+      "name": "Gemini Native generateContent",
+      "endpoint": "POST /v1beta/models/*:generateContent",
+      "original": "app/src/app/api/v1beta/models/[...path]",
+      "rustModule": "nine_gateway::gemini_generate",
+      "tests": [
+        "crates/gateway/tests/adapters.rs::gemini_generate_content_passthrough"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.auth",
+      "name": "Multi-Credential Authentication",
+      "endpoint": "Authorization: Bearer, x-api-key, x-goog-api-key, ?key=",
+      "original": "app/src/shared/utils/apiKey.js",
+      "rustModule": "nine_gateway::authorize",
+      "tests": [
+        "crates/gateway/src/lib.rs::tests::auth_missing_key_401_code",
+        "crates/gateway/src/lib.rs::tests::auth_invalid_key_401",
+        "crates/gateway/src/lib.rs::tests::auth_valid_key_reaches_upstream"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.alias.chain",
+      "name": "Model Alias Multi-Step Chain Resolution",
+      "endpoint": "Internal & Request Routing",
+      "original": "app/src/chunks/8910.js",
+      "rustModule": "nine_routing::resolve_alias_chain",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::alias_single_and_chain",
+        "crates/gateway/tests/routing.rs::alias_chain_routes_to_target"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.alias.cycle_protection",
+      "name": "Model Alias Cycle Protection",
+      "endpoint": "Internal",
+      "original": "app/src/chunks/8910.js",
+      "rustModule": "nine_routing::resolve_alias_chain",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::alias_cycle_protection"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.alias.api",
+      "name": "Model Alias CRUD API",
+      "endpoint": "GET/PUT/DELETE /api/models/alias",
+      "original": "app/src/app/api/models/alias/route.js",
+      "rustModule": "nine_gateway::get_model_aliases, put_model_alias, delete_model_alias",
+      "tests": [
+        "crates/storage/src/lib.rs::tests::model_alias_crud_lifecycle",
+        "crates/gateway/tests/routing.rs::model_alias_crud_api_endpoints"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.combos.expansion",
+      "name": "Combo Virtual Model Expansion",
+      "endpoint": "Internal & POST /v1/chat/completions",
+      "original": "app/src/chunks/8910.js::p",
+      "rustModule": "nine_routing::expand_combo",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::combo_expansion_rules",
+        "crates/gateway/tests/routing.rs::combo_fallback_across_models"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.combos.api",
+      "name": "Combo CRUD API",
+      "endpoint": "GET/POST /api/combos, GET/PUT/DELETE /api/combos/:id",
+      "original": "app/src/app/api/combos/route.js, app/src/app/api/combos/[id]/route.js",
+      "rustModule": "nine_gateway::list_combos, create_combo, get_combo, update_combo, delete_combo",
+      "tests": [
+        "crates/storage/src/lib.rs::tests::combo_crud_lifecycle",
+        "crates/gateway/tests/routing.rs::combo_crud_api_endpoints"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.combos.sticky_round_robin",
+      "name": "Combo Sticky Round-Robin",
+      "endpoint": "Internal",
+      "original": "app/src/chunks/8910.js::o",
+      "rustModule": "nine_routing::StickyRoundRobin",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::sticky_round_robin_sequence"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.multimodal_filtering",
+      "name": "Combo Multimodal Capability Filter",
+      "endpoint": "Internal",
+      "original": "app/src/chunks/8910.js::n",
+      "rustModule": "nine_routing::filter_by_capability",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::multimodal_filtering"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.priority",
+      "name": "Priority-Based Connection Selection",
+      "endpoint": "Internal",
+      "original": "app/src/chunks/4884.js",
+      "rustModule": "nine_routing::pick_connection",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::priority_skips_unhealthy",
+        "crates/gateway/tests/proxy.rs::provider_prefix_picks_matching_upstream"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.weighted",
+      "name": "Weighted Connection Selection",
+      "endpoint": "Internal",
+      "original": "app/src/chunks/4884.js",
+      "rustModule": "nine_routing::pick_weighted",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::weighted_selection"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "routing.fallback_backoff",
+      "name": "Exponential Backoff & Fallback Evaluator",
+      "endpoint": "Internal & Request Error Loop",
+      "original": "app/src/chunks/3662.js::EQ, 12557.js::e",
+      "rustModule": "nine_routing::evaluate_fallback, backoff_cooldown_ms",
+      "tests": [
+        "crates/routing/src/lib.rs::tests::fallback_evaluation_scenarios",
+        "crates/routing/src/lib.rs::tests::backoff_monotonic",
+        "crates/gateway/tests/proxy.rs::retryable_500_falls_through",
+        "crates/gateway/tests/adapters.rs::anthropic_rate_limit_falls_back"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.pkce",
+      "name": "RFC 7636 PKCE S256",
+      "endpoint": "Internal",
+      "original": "app/src/chunks/*.js",
+      "rustModule": "nine_oauth::Pkce",
+      "tests": [
+        "crates/oauth/src/lib.rs::tests::pkce_s256_rfc7636_vector",
+        "crates/oauth/src/lib.rs::tests::generated_pkce_is_well_formed"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.start",
+      "name": "OAuth Start (PKCE + CSRF State)",
+      "endpoint": "GET /api/oauth/:provider",
+      "original": "app/src/app/api/oauth/[provider]/route.js",
+      "rustModule": "nine_gateway::oauth_start",
+      "tests": [
+        "crates/gateway/tests/oauth.rs::start_returns_authorize_url_with_pkce_and_state"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.callback",
+      "name": "OAuth Code Exchange & Connection Storage",
+      "endpoint": "GET /api/oauth/callback",
+      "original": "app/src/app/api/oauth/[provider]/[action]/route.js",
+      "rustModule": "nine_gateway::oauth_callback",
+      "tests": [
+        "crates/gateway/tests/oauth.rs::callback_exchanges_code_and_stores_connection"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.refresh",
+      "name": "OAuth Token Refresh & Rotation",
+      "endpoint": "POST /api/oauth/:provider/refresh",
+      "original": "app/src/app/api/oauth/[provider]/[action]/route.js",
+      "rustModule": "nine_gateway::oauth_action(refresh)",
+      "tests": [
+        "crates/gateway/tests/oauth.rs::refresh_rotates_tokens"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "oauth.import_and_logout",
+      "name": "OAuth Token Import & Logout",
+      "endpoint": "POST /api/oauth/:provider/import-token, /logout",
+      "original": "app/src/app/api/oauth/[provider]/[action]/route.js",
+      "rustModule": "nine_gateway::oauth_action(import-token, logout)",
+      "tests": [
+        "crates/gateway/tests/oauth.rs::missing_code_400_and_import_token_and_logout"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "storage.schema",
+      "name": "11-Table SQLite Schema Bootstrap",
+      "endpoint": "Database Migration",
+      "original": "app/src/lib/db/schema.js",
+      "rustModule": "nine_storage::migrate",
+      "tests": [
+        "crates/storage/src/lib.rs::tests::schema_bootstraps"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "storage.connections",
+      "name": "Provider Connections Storage & Ordering",
+      "endpoint": "Internal & GET /api/providers",
+      "original": "app/src/lib/db/adapters/*.js",
+      "rustModule": "nine_storage::Store::upsert_connection, list_connections",
+      "tests": [
+        "crates/storage/src/lib.rs::tests::connection_roundtrip_and_ordering",
+        "crates/storage/src/lib.rs::tests::connection_update_delete_and_deactivate"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "storage.usage",
+      "name": "Usage Logging & Aggregation",
+      "endpoint": "Internal & GET /api/usage/stats",
+      "original": "app/src/lib/db/adapters/*.js",
+      "rustModule": "nine_storage::Store::record_usage, usage_totals",
+      "tests": [
+        "crates/storage/src/lib.rs::tests::usage_totals_accumulate"
+      ],
+      "status": "Verified"
+    }
+  ],
+  "deferredOrUnsupported": [
+    {
+      "feature": "MITM TLS Interception",
+      "reason": "Requires local CA certificate injection and OS root trust; implemented as separate external mitm helper in upstream 9Router."
+    },
+    {
+      "feature": "Tunnel Integration (Cloudflared / Tailscale)",
+      "reason": "Requires external native daemons (`cloudflared`, `tailscale`) managed via platform subprocesses."
+    },
+    {
+      "feature": "Interactive Browser-Loopback / Device-Polling OAuth",
+      "reason": "Requires interactive user browser UI interaction; endpoints explicitly return 501 per no-fake rule."
+    },
+    {
+      "feature": "Responses API (/v1/responses)",
+      "reason": "Responses API format differs from completions; returns explicit 501 until Phase 7."
+    }
+  ]
+}
