@@ -372,3 +372,43 @@ async fn interactive_actions_are_explicitly_not_implemented() {
         assert_eq!(v["error"]["type"], "not_implemented", "{action}");
     }
 }
+
+#[tokio::test]
+async fn expired_state_rejected_and_purged() {
+    let store = Arc::new(Store::open_memory().unwrap());
+    let (token_url, _, _) = spawn_token_server().await;
+    let app = app_with(store.clone(), &token_url);
+    let (_, start) = get_json(app.clone(), "/api/oauth/codex").await;
+    let state = start["state"].as_str().unwrap().to_string();
+    store
+        .kv_set(
+            "oauth_state",
+            &state,
+            &serde_json::json!({
+                "state": state, "provider": "codex",
+                "redirectUri": "http://127.0.0.1:1455/auth/callback",
+                "createdAt": "2000-01-01T00:00:00Z"
+            })
+            .to_string(),
+        )
+        .unwrap();
+    let (s, v) = get_json(
+        app,
+        &format!("/api/oauth/callback?code=good-code&state={state}"),
+    )
+    .await;
+    assert_eq!(s, StatusCode::BAD_REQUEST);
+    assert_eq!(v["error"]["code"], "expired_state");
+    assert!(store.kv_get("oauth_state", &state).unwrap().is_none());
+}
+
+#[tokio::test]
+async fn provider_error_text_capped() {
+    let store = Arc::new(Store::open_memory().unwrap());
+    let (token_url, _, _) = spawn_token_server().await;
+    let app = app_with(store, &token_url);
+    let long = "x".repeat(500);
+    let (s, v) = get_json(app, &format!("/api/oauth/callback?error={long}&state=zzz")).await;
+    assert_eq!(s, StatusCode::BAD_REQUEST);
+    assert!(v["error"]["message"].as_str().unwrap().len() <= 200);
+}

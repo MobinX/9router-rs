@@ -360,11 +360,9 @@ async fn oauth_start(State(st): State<Arc<AppState>>, Path(provider): Path<Strin
         });
         let store = store.clone();
         let _ = tokio::task::spawn_blocking(move || {
-            store.kv_set(
-                "oauth_state",
-                &state,
-                &serde_json::to_string(&entry).unwrap(),
-            )
+            if let Ok(raw) = serde_json::to_string(&entry) {
+                let _ = store.kv_set("oauth_state", &state, &raw);
+            }
         })
         .await;
     }
@@ -391,7 +389,8 @@ async fn oauth_callback(
         );
     };
     if let Some(err_desc) = &q.error {
-        return err(400, err_desc, "invalid_request_error", "oauth_error");
+        let capped: String = err_desc.chars().take(200).collect();
+        return err(400, &capped, "invalid_request_error", "oauth_error");
     }
     let Some(code) = &q.code else {
         return err(400, "missing code", "invalid_request_error", "missing_code");
@@ -406,6 +405,30 @@ async fn oauth_callback(
     } else {
         Value::Null
     };
+    if let Some(created) = entry.get("createdAt").and_then(|v| v.as_str()) {
+        let fresh = chrono::DateTime::parse_from_rfc3339(created)
+            .map(|dt| {
+                chrono::Utc::now()
+                    .signed_duration_since(dt.with_timezone(&chrono::Utc))
+                    .num_seconds()
+                    < 600
+            })
+            .unwrap_or(false);
+        if !fresh {
+            if let Some(store) = &st.store {
+                let store = store.clone();
+                let key = state_val.clone();
+                let _ =
+                    tokio::task::spawn_blocking(move || store.kv_delete("oauth_state", &key)).await;
+            }
+            return err(
+                400,
+                "expired state",
+                "invalid_request_error",
+                "expired_state",
+            );
+        }
+    }
     let provider = entry
         .get("provider")
         .and_then(|v| v.as_str())
@@ -538,9 +561,9 @@ async fn oauth_callback(
     };
     if let Some(store) = &st.store {
         let store = store.clone();
+        let store2 = store.clone();
         let conn = conn.clone();
         let _ = tokio::task::spawn_blocking(move || store.upsert_connection(&conn)).await;
-        let store2 = st.store.clone().unwrap();
         let key = state_val.clone();
         let _ = tokio::task::spawn_blocking(move || store2.kv_delete("oauth_state", &key)).await;
     }

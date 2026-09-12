@@ -99,6 +99,12 @@ pub struct Store {
 impl Store {
     pub fn open(path: &str) -> Result<Self, DbError> {
         let conn = Connection::open(path)?;
+        // Tokens at rest: restrict db file to owner-only.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
+        }
         migrate(&conn)?;
         Ok(Self {
             conn: Mutex::new(conn),
@@ -432,6 +438,24 @@ mod tests {
             created_at: now.clone(),
             updated_at: now,
         }
+    }
+
+    #[test]
+    fn db_file_is_owner_only() {
+        let dir = std::env::temp_dir().join(format!("nine-perm-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = dir.join("t.db");
+        let ps = p.to_str().unwrap().to_string();
+        Store::open(&ps).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                std::fs::metadata(&p).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+        }
+        std::fs::remove_dir_all(&dir).unwrap_or(());
     }
 
     #[test]
