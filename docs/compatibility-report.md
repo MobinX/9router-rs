@@ -39,3 +39,11 @@ Totals: discovered ~192 routes, 143 providers, 9 oauth flows, 11 tables. Fully t
 | GET /v1beta/models | {models:[{name,displayName,description,supportedGenerationMethods,inputTokenLimit,outputTokenLimit}]} | identical shape |
 | POST /v1/messages bad key | 401 {error:{message,type,code}} | identical envelope |
 | POST /v1/chat/completions bad key | 401 {error:{message,type,code}} | identical envelope |
+
+## Phase 5 (OAuth) — done
+
+- nine-oauth crate: RFC 7636 PKCE (S256), CSRF state generation, `OAuthSpec` for 12 discovered providers, config loading from `oauth-specs.json` + env vars (`NINE_<P>_CLIENT_ID/SECRET`), form urlencoding, token record parser, account picker (fresh > refreshable), device code parser and poll state machine.
+- storage crate: `Store` wrapper over sqlite, `providerConnections` CRUD + ordering (lowest priority first), KV store (`oauth_state` scope for PKCE verifiers), `usageHistory` recording + totals query.
+- gateway: `/api/oauth/:provider`, `/api/oauth/callback`, `/api/oauth/:provider/:action` (exchange, refresh, import-token, api-key, logout), `/api/providers` connection list, `/api/usage/stats` totals.
+- Tests: 74 pass across workspace (10 integration tests against mock token server; unit tests for PKCE, state, storage, parsing, account selection).
+- Clippy clean, fmt clean.

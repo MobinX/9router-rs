@@ -46,15 +46,14 @@ async fn main() {
     };
     let settings = nine_config::Settings::default();
     let catalog = nine_providers::load_catalog(&settings.data_dir);
-    let mut api_keys: Vec<String> = Vec::new();
-    if let Ok(conn) = rusqlite::Connection::open(settings.db_path()) {
-        let _ = nine_storage::migrate(&conn);
-        if let Ok(mut stmt) = conn.prepare("SELECT key FROM apiKeys WHERE isActive = 1") {
-            if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
-                api_keys = rows.filter_map(Result::ok).collect();
-            }
-        }
-    }
+    let oauth_specs = nine_oauth::load_specs(&settings.data_dir);
+    let store = nine_storage::Store::open(&settings.db_path())
+        .map(std::sync::Arc::new)
+        .ok();
+    let api_keys = store
+        .as_ref()
+        .and_then(|s| s.list_api_keys().ok())
+        .unwrap_or_default();
     let mut upstreams = Vec::new();
     if let Ok(url) = std::env::var("NINE_UPSTREAM_URL") {
         upstreams.push(nine_gateway::Upstream {
@@ -63,11 +62,14 @@ async fn main() {
             api_key: std::env::var("NINE_UPSTREAM_KEY").unwrap_or_default(),
         });
     }
-    let app = nine_gateway::router_with_state(
-        nine_gateway::AppState::new(upstreams, settings.timeout_ms)
-            .with_catalog(catalog)
-            .with_api_keys(api_keys),
-    );
+    let mut state = nine_gateway::AppState::new(upstreams, settings.timeout_ms)
+        .with_catalog(catalog)
+        .with_api_keys(api_keys)
+        .with_oauth_specs(oauth_specs);
+    if let Some(st) = store {
+        state = state.with_store(st);
+    }
+    let app = nine_gateway::router_with_state(state);
     let addr = format!("{}:{}", cli.host, port);
     let listener = tokio::net::TcpListener::bind(&addr).await.expect("bind");
     println!("9router-rs listening on {addr}");

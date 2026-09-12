@@ -8,6 +8,8 @@ use axum::{
 };
 use futures_util::StreamExt;
 use nine_providers::{ApiStyle, ModelEntry, Provider};
+use nine_storage::{ProviderConnection, Store};
+use serde_json::Value;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_stream::wrappers::ReceiverStream;
@@ -30,6 +32,10 @@ pub struct AppState {
     /// false as soon as the apiKeys table has at least one active key.
     pub open_mode: bool,
     pub api_keys: Arc<Vec<String>>,
+    pub store: Option<Arc<Store>>,
+    pub oauth_specs: Arc<Vec<nine_oauth::OAuthSpec>>,
+    pub data_dir: String,
+    pub callback_base: String,
 }
 
 impl AppState {
@@ -42,11 +48,32 @@ impl AppState {
             catalog: Arc::new(Vec::new()),
             open_mode: true,
             api_keys: Arc::new(Vec::new()),
+            store: None,
+            oauth_specs: Arc::new(Vec::new()),
+            data_dir: std::env::var("HOME")
+                .map(|h| format!("{h}/.9router"))
+                .unwrap_or_else(|_| ".".into()),
+            callback_base: "http://127.0.0.1:20128".into(),
         }
     }
 
     pub fn with_catalog(mut self, catalog: Vec<ModelEntry>) -> Self {
         self.catalog = Arc::new(catalog);
+        self
+    }
+
+    pub fn with_store(mut self, store: Arc<Store>) -> Self {
+        self.store = Some(store);
+        self
+    }
+
+    pub fn with_oauth_specs(mut self, specs: Vec<nine_oauth::OAuthSpec>) -> Self {
+        self.oauth_specs = Arc::new(specs);
+        self
+    }
+
+    pub fn with_callback_base(mut self, base: &str) -> Self {
+        self.callback_base = base.to_string();
         self
     }
 
@@ -102,7 +129,9 @@ pub fn router_with_state(state: AppState) -> Router {
         .route("/api/v1beta/models", get(models))
         .route("/v1beta/models", get(gemini_models))
         .route("/v1beta/models/*path", post(gemini_generate))
+        .route("/api/oauth/callback", get(oauth_callback))
         .route("/api/oauth/:provider", get(oauth_start))
+        .route("/api/oauth/:provider/:action", post(oauth_action))
         .route("/api/models", get(models))
         .route("/api/providers", get(providers))
         .route("/api/usage/stats", get(usage_stats))
@@ -171,22 +200,62 @@ async fn model_info(
     }
 }
 
-async fn providers() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "providers": nine_providers::PROVIDER_IDS.iter().take(5).collect::<Vec<_>>(),
-        "total": nine_providers::PROVIDER_IDS.len()
-    }))
+async fn providers(State(st): State<Arc<AppState>>) -> Response {
+    let rows = match &st.store {
+        Some(store) => {
+            let res = tokio::task::spawn_blocking({
+                let store = store.clone();
+                move || store.list_connections(None)
+            })
+            .await;
+            match res {
+                Ok(Ok(v)) => v,
+                _ => {
+                    return err(
+                        500,
+                        "failed to load connections",
+                        "internal_error",
+                        "connection_load_failed",
+                    )
+                }
+            }
+        }
+        None => Vec::new(),
+    };
+    let connections: Vec<Value> = rows
+        .into_iter()
+        .map(|c| {
+            serde_json::json!({
+                "id": c.id,
+                "provider": c.provider,
+                "authType": c.auth_type,
+                "name": c.name,
+                "email": c.email,
+                "priority": c.priority,
+                "isActive": c.is_active,
+                "expiresAt": c.data.get("expires_at").or_else(|| c.data.get("expiresAt")).and_then(|v| v.as_i64()).and_then(|ts| chrono::DateTime::from_timestamp(ts, 0)).map(|dt| dt.to_rfc3339()),
+                "scope": c.data.get("scope").and_then(|v| v.as_str()).unwrap_or_default(),
+                "createdAt": c.created_at,
+                "updatedAt": c.updated_at,
+            })
+        })
+        .collect();
+    Json(serde_json::json!({"connections": connections})).into_response()
 }
 
-async fn usage_stats() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "totalRequests": 0,
-        "totalPromptTokens": 0,
-        "totalCompletionTokens": 0,
-        "totalCachedTokens": 0,
-        "totalCost": 0,
-        "byProvider": {}
-    }))
+async fn usage_stats(State(st): State<Arc<AppState>>) -> Response {
+    let Some(store) = &st.store else {
+        return Json(serde_json::json!({"totalRequests":0,"totalPromptTokens":0,"totalCompletionTokens":0,"totalCachedTokens":0,"totalCost":0,"byProvider":{}})).into_response();
+    };
+    match tokio::task::spawn_blocking({
+        let store = store.clone();
+        move || store.usage_totals()
+    })
+    .await
+    {
+        Ok(Ok(v)) => Json(v).into_response(),
+        _ => err(500, "usage stats failed", "internal_error", "usage_failed").into_response(),
+    }
 }
 
 async fn settings() -> impl IntoResponse {
@@ -210,21 +279,575 @@ async fn keys() -> impl IntoResponse {
     Json(serde_json::json!({"keys": []}))
 }
 
-async fn oauth_start(Path(provider): Path<String>) -> impl IntoResponse {
-    if !nine_oauth::OAUTH_PROVIDERS.contains(&provider.as_str())
-        && !nine_providers::is_known_provider(&provider)
-    {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": {"message": "unknown provider"}})),
-        )
-            .into_response();
+async fn oauth_start(State(st): State<Arc<AppState>>, Path(provider): Path<String>) -> Response {
+    let Some(spec) = nine_oauth::spec_for(&st.oauth_specs, &provider) else {
+        return err(
+            404,
+            "unknown provider",
+            "not_found_error",
+            "unknown_provider",
+        );
+    };
+    let pkce = if spec.pkce {
+        Some(nine_oauth::Pkce::generate())
+    } else {
+        None
+    };
+    let state = nine_oauth::new_state();
+    let redirect_uri = format!("{}{}", st.callback_base, spec.callback_path);
+    let authorize_url = spec.authorize_url(&state, pkce.as_ref(), &redirect_uri);
+    let resp = serde_json::json!({
+        "provider": provider,
+        "authorizeUrl": authorize_url,
+        "state": state,
+        "codeChallengeMethod": if spec.pkce { "S256" } else { "" },
+        "deviceFlow": spec.device_flow,
+        "clientIdConfigured": !spec.client_id.is_empty(),
+        "scopes": spec.scopes,
+    });
+    if let Some(store) = &st.store {
+        let entry = serde_json::json!({
+            "state": state,
+            "codeChallenge": pkce.as_ref().map(|p| p.challenge.clone()),
+            "codeVerifier": pkce.as_ref().map(|p| p.verifier.clone()),
+            "provider": provider,
+            "redirectUri": redirect_uri,
+            "scopes": spec.scopes,
+            "createdAt": chrono::Utc::now().to_rfc3339()
+        });
+        let store = store.clone();
+        let _ = tokio::task::spawn_blocking(move || {
+            store.kv_set(
+                "oauth_state",
+                &state,
+                &serde_json::to_string(&entry).unwrap(),
+            )
+        })
+        .await;
     }
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({"provider": provider, "authorizeUrl": "https://accounts.example.com/oauth/authorize"})),
-    )
-        .into_response()
+    (StatusCode::OK, Json(resp)).into_response()
+}
+
+#[derive(serde::Deserialize)]
+struct CallbackQuery {
+    code: Option<String>,
+    state: Option<String>,
+    error: Option<String>,
+}
+
+async fn oauth_callback(
+    State(st): State<Arc<AppState>>,
+    Query(q): Query<CallbackQuery>,
+) -> Response {
+    let Some(state_val) = &q.state else {
+        return err(
+            400,
+            "missing state",
+            "invalid_request_error",
+            "missing_state",
+        );
+    };
+    if let Some(err_desc) = &q.error {
+        return err(400, err_desc, "invalid_request_error", "oauth_error");
+    }
+    let Some(code) = &q.code else {
+        return err(400, "missing code", "invalid_request_error", "missing_code");
+    };
+    let entry: Value = if let Some(store) = &st.store {
+        let store = store.clone();
+        let key = state_val.clone();
+        match tokio::task::spawn_blocking(move || store.kv_get("oauth_state", &key)).await {
+            Ok(Ok(Some(text))) => serde_json::from_str(&text).unwrap_or(Value::Null),
+            _ => Value::Null,
+        }
+    } else {
+        Value::Null
+    };
+    let provider = entry
+        .get("provider")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let redirect_uri = entry
+        .get("redirectUri")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string();
+    let Some(spec) = nine_oauth::spec_for(&st.oauth_specs, &provider) else {
+        return err(
+            400,
+            "missing spec for state",
+            "invalid_request_error",
+            "missing_spec",
+        );
+    };
+    if spec.client_id.is_empty() {
+        return err(
+            400,
+            "client not configured (set NINE_<PROVIDER>_CLIENT_ID or oauth-specs.json)",
+            "invalid_request_error",
+            "oauth_client_not_configured",
+        );
+    }
+    let pkce = entry
+        .get("codeVerifier")
+        .and_then(|v| v.as_str())
+        .map(nine_oauth::Pkce::from_verifier);
+    let body = spec.exchange_body(code, &redirect_uri, pkce.as_ref());
+    let resp = match st
+        .client
+        .post(&spec.token_url)
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(nine_oauth::form_encode(&body))
+        .send()
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            return err(
+                502,
+                &format!("token exchange failed: {e}"),
+                "upstream_error",
+                "token_exchange_failed",
+            )
+        }
+    };
+    let cb_status = resp.status();
+    if !cb_status.is_success() {
+        let txt = resp.text().await.unwrap_or_default();
+        let msg: String = serde_json::from_str::<Value>(&txt)
+            .ok()
+            .and_then(|v| {
+                v.pointer("/error/message")
+                    .and_then(|m| m.as_str())
+                    .map(str::to_string)
+            })
+            .unwrap_or_else(|| txt.chars().take(300).collect());
+        return err(
+            400,
+            &format!("HTTP {cb_status}: {msg}"),
+            "invalid_request_error",
+            "token_exchange_failed",
+        );
+    }
+    let token_json = resp.json::<Value>().await.unwrap_or(Value::Null);
+    let now = chrono::Utc::now().timestamp();
+    let parsed = nine_oauth::parse_token_response(&provider, &provider, &token_json, now);
+    let account_id = parsed
+        .id_token
+        .as_deref()
+        .and_then(|t| t.split('.').nth(1))
+        .and_then(|seg| {
+            base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, seg).ok()
+        })
+        .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+        .and_then(|v| {
+            v.get("sub")
+                .or_else(|| v.get("email"))
+                .and_then(|s| s.as_str())
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| format!("user_{}", uuid::Uuid::new_v4().simple()));
+    let conn = ProviderConnection {
+        id: uuid::Uuid::new_v4().to_string(),
+        provider: provider.clone(),
+        auth_type: "oauth".into(),
+        name: Some(
+            parsed
+                .id_token
+                .as_deref()
+                .and_then(|t| t.split('.').nth(1))
+                .and_then(|b| {
+                    base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, b)
+                        .ok()
+                })
+                .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+                .and_then(|v| {
+                    v.get("name")
+                        .or_else(|| v.get("email"))
+                        .and_then(|s| s.as_str())
+                        .map(str::to_string)
+                })
+                .unwrap_or_else(|| account_id.clone()),
+        ),
+        email: parsed
+            .id_token
+            .as_deref()
+            .and_then(|t| t.split('.').nth(1))
+            .and_then(|b| {
+                base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, b).ok()
+            })
+            .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+            .and_then(|v| v.get("email").and_then(|s| s.as_str()).map(str::to_string)),
+        priority: None,
+        is_active: true,
+        data: serde_json::json!({
+            "access_token": parsed.access_token,
+            "refresh_token": parsed.refresh_token,
+            "expires_at": parsed.expires_at,
+            "id_token": parsed.id_token,
+            "scope": parsed.scope,
+            "token_type": parsed.token_type,
+            "account_id": account_id,
+        }),
+        created_at: chrono::Utc::now().to_rfc3339(),
+        updated_at: chrono::Utc::now().to_rfc3339(),
+    };
+    if let Some(store) = &st.store {
+        let store = store.clone();
+        let conn = conn.clone();
+        let _ = tokio::task::spawn_blocking(move || store.upsert_connection(&conn)).await;
+        let store2 = st.store.clone().unwrap();
+        let key = state_val.clone();
+        let _ = tokio::task::spawn_blocking(move || store2.kv_delete("oauth_state", &key)).await;
+    }
+    (StatusCode::OK, Json(serde_json::json!({
+        "ok": true,
+        "provider": provider,
+        "connection": {
+            "id": conn.id,
+            "provider": conn.provider,
+            "authType": conn.auth_type,
+            "name": conn.name,
+            "email": conn.email,
+            "expiresAt": chrono::DateTime::from_timestamp(conn.data.get("expires_at").and_then(|v| v.as_i64()).unwrap_or(0), 0).map(|dt| dt.to_rfc3339()),
+            "scope": conn.data.get("scope").and_then(|v| v.as_str()),
+        }
+    }))).into_response()
+}
+
+#[derive(serde::Deserialize, Default)]
+struct OAuthAction {
+    code: Option<String>,
+    state: Option<String>,
+    #[serde(rename = "codeVerifier")]
+    code_verifier: Option<String>,
+    #[serde(rename = "accessToken")]
+    access_token: Option<String>,
+    #[serde(rename = "refreshToken")]
+    refresh_token: Option<String>,
+    #[serde(rename = "connectionId")]
+    connection_id: Option<String>,
+}
+
+async fn oauth_action(
+    State(st): State<Arc<AppState>>,
+    Path((provider, action)): Path<(String, String)>,
+    Json(body): Json<OAuthAction>,
+) -> Response {
+    match action.as_str() {
+        "exchange" => {
+            let Some(spec) = nine_oauth::spec_for(&st.oauth_specs, &provider) else {
+                return err(
+                    404,
+                    "unknown provider",
+                    "not_found_error",
+                    "unknown_provider",
+                );
+            };
+            if spec.client_id.is_empty() {
+                return err(
+                    400,
+                    "client not configured",
+                    "invalid_request_error",
+                    "oauth_client_not_configured",
+                );
+            }
+            let code = match body.code {
+                Some(c) if !c.is_empty() => c,
+                _ => return err(400, "missing code", "invalid_request_error", "missing_code"),
+            };
+            let redirect_uri = String::new();
+            let pkce = body
+                .code_verifier
+                .as_deref()
+                .map(nine_oauth::Pkce::from_verifier);
+            let resp = match st
+                .client
+                .post(&spec.token_url)
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(nine_oauth::form_encode(&spec.exchange_body(
+                    &code,
+                    &redirect_uri,
+                    pkce.as_ref(),
+                )))
+                .send()
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    return err(
+                        502,
+                        &format!("token exchange failed: {e}"),
+                        "upstream_error",
+                        "token_exchange_failed",
+                    )
+                }
+            };
+            let status = resp.status();
+            let txt = resp.text().await.unwrap_or_default();
+            if !status.is_success() {
+                let msg: String = serde_json::from_str::<Value>(&txt)
+                    .ok()
+                    .and_then(|v| {
+                        v.pointer("/error/message")
+                            .and_then(|m| m.as_str())
+                            .map(str::to_string)
+                    })
+                    .unwrap_or_else(|| txt.chars().take(300).collect());
+                return err(
+                    status.as_u16(),
+                    &format!("HTTP {status}: {msg}"),
+                    "invalid_request_error",
+                    "token_exchange_failed",
+                );
+            }
+            let token_json: Value = serde_json::from_str(&txt).unwrap_or(Value::Null);
+            let now = chrono::Utc::now().timestamp();
+            let parsed = nine_oauth::parse_token_response(&provider, &provider, &token_json, now);
+            let conn = ProviderConnection {
+                id: uuid::Uuid::new_v4().to_string(),
+                provider: provider.clone(),
+                auth_type: "oauth".into(),
+                name: Some(
+                    parsed
+                        .id_token
+                        .as_deref()
+                        .and_then(|t| t.split('.').nth(1))
+                        .and_then(|b| {
+                            base64::Engine::decode(
+                                &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+                                b,
+                            )
+                            .ok()
+                        })
+                        .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+                        .and_then(|v| {
+                            v.get("name")
+                                .or_else(|| v.get("email"))
+                                .and_then(|s| s.as_str())
+                                .map(str::to_string)
+                        })
+                        .unwrap_or_else(|| "account".into()),
+                ),
+                email: parsed
+                    .id_token
+                    .as_deref()
+                    .and_then(|t| t.split('.').nth(1))
+                    .and_then(|b| {
+                        base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, b)
+                            .ok()
+                    })
+                    .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+                    .and_then(|v| v.get("email").and_then(|s| s.as_str()).map(str::to_string)),
+                priority: None,
+                is_active: true,
+                data: serde_json::json!({"access_token": parsed.access_token, "refresh_token": parsed.refresh_token, "expires_at": parsed.expires_at, "id_token": parsed.id_token, "scope": parsed.scope}),
+                created_at: chrono::Utc::now().to_rfc3339(),
+                updated_at: chrono::Utc::now().to_rfc3339(),
+            };
+            if let Some(store) = &st.store {
+                let store = store.clone();
+                let c = conn.clone();
+                let _ = tokio::task::spawn_blocking(move || store.upsert_connection(&c)).await;
+            }
+            (StatusCode::OK, Json(serde_json::json!({"ok":true,"connection":{"id":conn.id,"provider":conn.provider,"authType":conn.auth_type,"name":conn.name,"email":conn.email}}))).into_response()
+        }
+        "import-token" => {
+            let access_token = body.access_token.clone().filter(|a| !a.is_empty());
+            let Some(access) = access_token.filter(|a| !a.is_empty()) else {
+                return err(
+                    400,
+                    "missing accessToken",
+                    "invalid_request_error",
+                    "missing_access_token",
+                );
+            };
+            let conn = ProviderConnection {
+                id: uuid::Uuid::new_v4().to_string(),
+                provider: provider.clone(),
+                auth_type: "token".into(),
+                name: Some(provider.clone()),
+                email: None,
+                priority: None,
+                is_active: true,
+                data: serde_json::json!({"access_token": access, "refresh_token": body.refresh_token, "expires_at": chrono::Utc::now().timestamp() + 86400*30}),
+                created_at: chrono::Utc::now().to_rfc3339(),
+                updated_at: chrono::Utc::now().to_rfc3339(),
+            };
+            if let Some(store) = &st.store {
+                let store = store.clone();
+                let c = conn.clone();
+                let _ = tokio::task::spawn_blocking(move || store.upsert_connection(&c)).await;
+            }
+            (StatusCode::OK, Json(serde_json::json!({"ok":true,"connection":{"id":conn.id,"provider":conn.provider,"authType":conn.auth_type,"name":conn.name}}))).into_response()
+        }
+        "api-key" => {
+            let Some(key) = body.access_token else {
+                return err(
+                    400,
+                    "missing apiKey",
+                    "invalid_request_error",
+                    "missing_api_key",
+                );
+            };
+            let conn = ProviderConnection {
+                id: uuid::Uuid::new_v4().to_string(),
+                provider: provider.clone(),
+                auth_type: "api_key".into(),
+                name: Some(provider.clone()),
+                email: None,
+                priority: None,
+                is_active: true,
+                data: serde_json::json!({"api_key": key}),
+                created_at: chrono::Utc::now().to_rfc3339(),
+                updated_at: chrono::Utc::now().to_rfc3339(),
+            };
+            if let Some(store) = &st.store {
+                let store = store.clone();
+                let c = conn.clone();
+                let _ = tokio::task::spawn_blocking(move || store.upsert_connection(&c)).await;
+            }
+            (StatusCode::OK, Json(serde_json::json!({"ok":true,"connection":{"id":conn.id,"provider":conn.provider,"authType":conn.auth_type}}))).into_response()
+        }
+        "refresh" => {
+            let conn_id = body
+                .connection_id
+                .clone()
+                .or_else(|| body.state.clone())
+                .unwrap_or_default();
+            let conn = if let Some(store) = &st.store {
+                let store = store.clone();
+                let cid = conn_id.clone();
+                match tokio::task::spawn_blocking(move || store.get_connection(&cid)).await {
+                    Ok(Ok(Some(c))) => c,
+                    _ => {
+                        return err(
+                            404,
+                            "connection not found",
+                            "not_found_error",
+                            "connection_not_found",
+                        )
+                    }
+                }
+            } else {
+                return err(
+                    501,
+                    "storage unavailable",
+                    "not_implemented",
+                    "storage_unavailable",
+                );
+            };
+            let refresh_token = conn
+                .data
+                .get("refresh_token")
+                .or_else(|| conn.data.get("refreshToken"))
+                .and_then(|r| r.as_str())
+                .unwrap_or("");
+            if refresh_token.is_empty() {
+                return err(
+                    400,
+                    "no refresh token available",
+                    "invalid_request_error",
+                    "no_refresh_token",
+                );
+            }
+            let Some(spec) = nine_oauth::spec_for(&st.oauth_specs, &conn.provider) else {
+                return err(
+                    404,
+                    "provider spec not found",
+                    "not_found_error",
+                    "unknown_provider",
+                );
+            };
+            let resp = match st
+                .client
+                .post(&spec.token_url)
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(nine_oauth::form_encode(&spec.refresh_body(refresh_token)))
+                .send()
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    return err(
+                        502,
+                        &format!("refresh failed: {e}"),
+                        "upstream_error",
+                        "refresh_failed",
+                    )
+                }
+            };
+            let status = resp.status();
+            let txt = resp.text().await.unwrap_or_default();
+            if !status.is_success() {
+                let msg: String = serde_json::from_str::<Value>(&txt)
+                    .ok()
+                    .and_then(|v| {
+                        v.pointer("/error/message")
+                            .and_then(|m| m.as_str())
+                            .map(str::to_string)
+                    })
+                    .unwrap_or_else(|| txt.chars().take(300).collect());
+                return err(status.as_u16(), &msg, "upstream_error", "refresh_failed");
+            }
+            let token_json: Value = serde_json::from_str(&txt).unwrap_or(Value::Null);
+            let parsed = nine_oauth::parse_token_response(
+                &conn.provider,
+                &conn.id,
+                &token_json,
+                chrono::Utc::now().timestamp(),
+            );
+            let mut data = conn.data.clone();
+            data["access_token"] = serde_json::json!(parsed.access_token);
+            if let Some(rt) = parsed.refresh_token {
+                data["refresh_token"] = serde_json::json!(rt);
+            }
+            data["expires_at"] = serde_json::json!(parsed.expires_at);
+            if let Some(store) = &st.store {
+                let store = store.clone();
+                let cid = conn.id.clone();
+                let now = chrono::Utc::now().to_rfc3339();
+                let _ = tokio::task::spawn_blocking(move || {
+                    store.update_connection_data(&cid, &data, &now)
+                })
+                .await;
+            }
+            (StatusCode::OK, Json(serde_json::json!({"ok":true,"connection":{"id":conn.id,"provider":conn.provider,"expiresAt": chrono::DateTime::from_timestamp(parsed.expires_at,0).map(|dt| dt.to_rfc3339())}}))).into_response()
+        }
+        "logout" => {
+            let conn_id = body
+                .connection_id
+                .clone()
+                .or_else(|| body.state.clone())
+                .unwrap_or_default();
+            if let Some(store) = &st.store {
+                let store = store.clone();
+                let cid = conn_id.clone();
+                let _ = tokio::task::spawn_blocking(move || store.delete_connection(&cid)).await;
+            }
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({"ok":true,"connection":{"id":conn_id}})),
+            )
+                .into_response()
+        }
+        "auto-import" | "import" | "import-cli-proxy" | "social-authorize" | "social-exchange" => {
+            // Stub: documented interactive flows requiring browser loopback/device polling.
+            err(
+                501,
+                &format!("{action} not yet implemented (interactive flow)"),
+                "not_implemented",
+                &format!("{action}_not_implemented"),
+            )
+        }
+        other => err(
+            404,
+            &format!("unknown action: {other}"),
+            "not_found_error",
+            "unknown_action",
+        ),
+    }
 }
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────

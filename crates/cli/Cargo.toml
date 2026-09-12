@@ -18,3 +18,4 @@ nine-storage = { path = "../storage" }
 nine-providers = { path = "../providers" }
 nine-gateway = { path = "../gateway" }
 rusqlite.workspace = true
+nine-oauth = { path = "../oauth" }
