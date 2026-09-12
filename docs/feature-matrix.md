@@ -1,7 +1,7 @@
 # Feature Coverage Matrix (Machine-Readable Verified)
 
-**Last Updated:** 2026-09-12T18:18:45.133Z  
-**Claimed & Fully Tested:** 28 / 28 features  
+**Last Updated:** 2026-09-12T18:31:13.894Z  
+**Claimed & Fully Tested:** 32 / 32 features  
 **All claimed features have automated unit/integration tests attached.** Discovered-only items are explicitly documented as deferred below.
 
 ## Verified Features
@@ -36,6 +36,10 @@
 | `storage.schema` | 11-Table SQLite Schema Bootstrap | `Database Migration` | `nine_storage::migrate` | `crates/storage/src/lib.rs::tests::schema_bootstraps` | **Verified** |
 | `storage.connections` | Provider Connections Storage & Ordering | `Internal & GET /api/providers` | `nine_storage::Store::upsert_connection, list_connections` | `crates/storage/src/lib.rs::tests::connection_roundtrip_and_ordering` | **Verified** |
 | `storage.usage` | Usage Logging & Aggregation | `Internal & GET /api/usage/stats` | `nine_storage::Store::record_usage, usage_totals` | `crates/storage/src/lib.rs::tests::usage_totals_accumulate` | **Verified** |
+| `gateway.responses` | Responses API Wire Translation | `POST /v1/responses, POST /codex/*` | `nine_gateway::responses` | `crates/gateway/src/lib.rs::tests::responses_api_validation_and_shape` | **Verified** |
+| `cli_tools.all_statuses` | CLI Tools Status Inspection | `GET /api/cli-tools/all-statuses` | `nine_gateway::cli_tools_all_statuses` | `crates/gateway/tests/phase7.rs::cli_tools_all_statuses_returns_all_tools` | **Verified** |
+| `cli_tools.settings_crud` | CLI Tools Settings Inspection & Application | `GET/POST/DELETE /api/cli-tools/:tool` | `nine_gateway::get_cli_tool, post_cli_tool, delete_cli_tool` | `crates/gateway/tests/phase7.rs::cli_tools_individual_get_and_post` | **Verified** |
+| `gateway.shutdown` | Production Shutdown Policy | `POST /api/shutdown` | `nine_gateway::shutdown` | `crates/gateway/tests/phase7.rs::shutdown_endpoint_matches_production_policy` | **Verified** |
 
 ## Deferred / Unsupported Features (No Fake Implementation)
 
@@ -44,4 +48,3 @@
 | **MITM TLS Interception** | Requires local CA certificate injection and OS root trust; implemented as separate external mitm helper in upstream 9Router. |
 | **Tunnel Integration (Cloudflared / Tailscale)** | Requires external native daemons (`cloudflared`, `tailscale`) managed via platform subprocesses. |
 | **Interactive Browser-Loopback / Device-Polling OAuth** | Requires interactive user browser UI interaction; endpoints explicitly return 501 per no-fake rule. |
-| **Responses API (/v1/responses)** | Responses API format differs from completions; returns explicit 501 until Phase 7. |

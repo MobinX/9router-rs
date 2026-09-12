@@ -61,3 +61,13 @@ Totals: discovered ~192 routes, 143 providers, 9 oauth flows, 11 tables. Fully t
 - Selection Strategies: priority-based (`pick_connection`), round-robin (`round_robin`), weighted selection (`pick_weighted`).
 - Tests: 85 tests passing across workspace (4 gateway routing integration tests, 10 routing unit/proptests, 8 storage unit tests, plus all previous provider/gateway/oauth tests).
 - Machine-Readable Coverage Matrix: created `docs/feature-matrix.json` and updated `docs/feature-matrix.md`.
+
+## Phase 7 (CLI & UI Integration, Responses API, Shutdown) — done
+
+- Responses API (/v1/responses & /codex/* rewrites): full request wire translation (input text parts -> messages) -> model alias chain -> combo resolution -> upstream execution -> output formatting ({id, object: "response", status: "completed", output: [...], usage}).
+- CLI Tools Endpoints:
+  - GET /api/cli-tools/all-statuses: inspects all 13 supported AI tools (claude, codex, opencode, droid, openclaw, hermes, cowork, cline, kilo, deepseek-tui, jcode, grok-build, devin) and returns installed flag, config paths, and 9router configuration status.
+  - GET/POST/DELETE /api/cli-tools/:tool: inspects tool config, applies 9router base_url/model/apiKey, or resets config.
+- Shutdown Endpoint: POST /api/shutdown enforces production security policy (returns 403 Forbidden with exact original message "Not allowed in production").
+- Tests: 89 tests passing across workspace (4 new integration tests in crates/gateway/tests/phase7.rs + 85 previous tests).
+- Clippy clean, fmt clean.

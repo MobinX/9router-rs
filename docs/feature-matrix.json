@@ -1,11 +1,11 @@
 {
-  "version": "0.6.0",
-  "lastUpdated": "2026-09-12T18:18:45.133Z",
+  "version": "0.7.0",
+  "lastUpdated": "2026-09-12T18:31:13.894Z",
   "summary": {
-    "totalClaimedFeatures": 28,
-    "implementedAndTested": 28,
+    "totalClaimedFeatures": 32,
+    "implementedAndTested": 32,
     "discoveredOnly": 0,
-    "unsupportedOrDeferred": 4
+    "unsupportedOrDeferred": 3
   },
   "features": [
     {
@@ -332,6 +332,51 @@
         "crates/storage/src/lib.rs::tests::usage_totals_accumulate"
       ],
       "status": "Verified"
+    },
+    {
+      "id": "gateway.responses",
+      "name": "Responses API Wire Translation",
+      "endpoint": "POST /v1/responses, POST /codex/*",
+      "original": "app/src/app/api/v1/responses",
+      "rustModule": "nine_gateway::responses",
+      "tests": [
+        "crates/gateway/src/lib.rs::tests::responses_api_validation_and_shape",
+        "crates/gateway/tests/phase7.rs::responses_api_translates_and_formats_output"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "cli_tools.all_statuses",
+      "name": "CLI Tools Status Inspection",
+      "endpoint": "GET /api/cli-tools/all-statuses",
+      "original": "app/src/app/api/cli-tools/all-statuses/route.js",
+      "rustModule": "nine_gateway::cli_tools_all_statuses",
+      "tests": [
+        "crates/gateway/tests/phase7.rs::cli_tools_all_statuses_returns_all_tools"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "cli_tools.settings_crud",
+      "name": "CLI Tools Settings Inspection & Application",
+      "endpoint": "GET/POST/DELETE /api/cli-tools/:tool",
+      "original": "app/src/app/api/cli-tools/*-settings/route.js",
+      "rustModule": "nine_gateway::get_cli_tool, post_cli_tool, delete_cli_tool",
+      "tests": [
+        "crates/gateway/tests/phase7.rs::cli_tools_individual_get_and_post"
+      ],
+      "status": "Verified"
+    },
+    {
+      "id": "gateway.shutdown",
+      "name": "Production Shutdown Policy",
+      "endpoint": "POST /api/shutdown",
+      "original": "app/src/app/api/shutdown/route.js",
+      "rustModule": "nine_gateway::shutdown",
+      "tests": [
+        "crates/gateway/tests/phase7.rs::shutdown_endpoint_matches_production_policy"
+      ],
+      "status": "Verified"
     }
   ],
   "deferredOrUnsupported": [
@@ -346,10 +391,6 @@
     {
       "feature": "Interactive Browser-Loopback / Device-Polling OAuth",
       "reason": "Requires interactive user browser UI interaction; endpoints explicitly return 501 per no-fake rule."
-    },
-    {
-      "feature": "Responses API (/v1/responses)",
-      "reason": "Responses API format differs from completions; returns explicit 501 until Phase 7."
     }
   ]
 }

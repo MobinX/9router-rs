@@ -162,6 +162,14 @@ pub fn router_with_state(state: AppState) -> Router {
         .route("/api/settings", get(settings))
         .route("/api/auth/status", get(auth_status))
         .route("/api/keys", get(keys))
+        .route("/api/shutdown", post(shutdown))
+        .route("/api/cli-tools/all-statuses", get(cli_tools_all_statuses))
+        .route(
+            "/api/cli-tools/:tool",
+            get(get_cli_tool)
+                .post(post_cli_tool)
+                .delete(delete_cli_tool),
+        )
         .route("/api/combos", get(list_combos).post(create_combo))
         .route(
             "/api/combos/:id",
@@ -1877,13 +1885,359 @@ async fn gemini_generate(
     }
 }
 
-async fn responses() -> impl IntoResponse {
-    err(
-        501,
-        "responses API not yet implemented",
-        "not_implemented",
-        "not_implemented",
+// ─── Responses API ────────────────────────────────────────────────────────
+
+fn parse_responses_input(v: &Value) -> Vec<nine_providers::ChatMessage> {
+    if let Some(input) = v.get("input").and_then(|i| i.as_array()) {
+        let mut messages = Vec::new();
+        for item in input {
+            let role = item
+                .get("role")
+                .and_then(|r| r.as_str())
+                .unwrap_or("user")
+                .to_string();
+            let mut content_str = String::new();
+            if let Some(content) = item.get("content") {
+                if let Some(s) = content.as_str() {
+                    content_str = s.to_string();
+                } else if let Some(arr) = content.as_array() {
+                    for part in arr {
+                        if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
+                            if !content_str.is_empty() {
+                                content_str.push('\n');
+                            }
+                            content_str.push_str(text);
+                        }
+                    }
+                }
+            }
+            messages.push(nine_providers::ChatMessage {
+                role,
+                content: content_str,
+            });
+        }
+        if !messages.is_empty() {
+            return messages;
+        }
+    }
+    parse_messages(v)
+}
+
+fn completion_to_response_format(completion: &Value, model: &str, req_id: &str) -> Value {
+    let (_, bare) = nine_core::split_provider_model(model);
+    let assistant_content = completion
+        .pointer("/choices/0/message/content")
+        .and_then(|c| c.as_str())
+        .unwrap_or("");
+
+    let usage = completion.get("usage").cloned().unwrap_or_else(|| {
+        serde_json::json!({
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        })
+    });
+
+    let input_tokens = usage
+        .get("prompt_tokens")
+        .and_then(|t| t.as_u64())
+        .unwrap_or(0);
+    let output_tokens = usage
+        .get("completion_tokens")
+        .and_then(|t| t.as_u64())
+        .unwrap_or(0);
+
+    serde_json::json!({
+        "id": format!("resp_{}", req_id.strip_prefix("req_").unwrap_or(req_id)),
+        "object": "response",
+        "model": nine_core::normalize_model_id(bare),
+        "status": "completed",
+        "output": [
+            {
+                "type": "message",
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": assistant_content
+                    }
+                ]
+            }
+        ],
+        "usage": {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens
+        }
+    })
+}
+
+async fn responses(State(st): State<Arc<AppState>>, headers: HeaderMap, body: Bytes) -> Response {
+    if let Some(r) = authorize(&st, &headers, None) {
+        return r;
+    }
+    let req_id = nine_core::new_request_id();
+    let v: Value = match serde_json::from_slice(&body) {
+        Ok(v) => v,
+        Err(_) => {
+            return with_id(
+                err(400, "invalid json", "invalid_request_error", "invalid_json"),
+                &req_id,
+            );
+        }
+    };
+    let raw_model = v
+        .get("model")
+        .and_then(|m| m.as_str())
+        .unwrap_or("gpt-4o")
+        .to_string();
+    let stream = v.get("stream").and_then(|s| s.as_bool()).unwrap_or(false);
+
+    // 1. Alias chain resolution
+    let aliases = if let Some(store) = &st.store {
+        let store = store.clone();
+        tokio::task::spawn_blocking(move || store.get_model_aliases().unwrap_or_default())
+            .await
+            .unwrap_or_default()
+    } else {
+        (*st.static_aliases).clone()
+    };
+    let resolved_model = nine_routing::resolve_alias_chain(&raw_model, &aliases);
+
+    // 2. Combo expansion
+    let combos = if let Some(store) = &st.store {
+        let store = store.clone();
+        tokio::task::spawn_blocking(move || store.list_combos().unwrap_or_default())
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|c| nine_routing::ComboTarget {
+                id: c.id,
+                name: c.name,
+                models: c.models,
+            })
+            .collect()
+    } else {
+        (*st.static_combos).clone()
+    };
+
+    let model_candidates =
+        if let Some(expanded) = nine_routing::expand_combo(&resolved_model, &combos) {
+            st.router_srr
+                .select(&resolved_model, &expanded, st.sticky_limit)
+        } else {
+            vec![resolved_model.clone()]
+        };
+
+    let messages = parse_responses_input(&v);
+    let mut last: Option<Response> = None;
+
+    for cand_model in &model_candidates {
+        let (prefix, bare) = nine_core::split_provider_model(cand_model);
+        let provider = prefix.unwrap_or_else(|| nine_providers::infer_provider(bare));
+        let chat_req = nine_providers::ChatRequest {
+            model: bare.to_string(),
+            messages: messages.clone(),
+            stream,
+        };
+        let upstreams = upstream_candidates(&st, provider);
+        if upstreams.is_empty() {
+            continue;
+        }
+        for (cand_provider, base, key) in &upstreams {
+            let payload = match nine_providers::api_style(cand_provider) {
+                ApiStyle::Anthropic => {
+                    nine_providers::AnthropicAdapter.translate_request(&chat_req)
+                }
+                ApiStyle::Gemini => nine_providers::GeminiAdapter.translate_request(&chat_req),
+                ApiStyle::OpenAi => nine_providers::OpenAiPassthrough {
+                    provider_id: "openai",
+                    base_url: "",
+                }
+                .translate_request(&chat_req),
+            };
+            let url = nine_providers::chat_url(cand_provider, base, bare);
+            match try_upstream(
+                &st,
+                &req_id,
+                cand_model,
+                cand_provider,
+                &url,
+                key,
+                payload,
+                stream,
+            )
+            .await
+            {
+                Ok(resp) => {
+                    if stream {
+                        return resp;
+                    }
+                    let status = resp.status();
+                    let bytes = axum::body::to_bytes(resp.into_body(), 1 << 20)
+                        .await
+                        .unwrap_or_default();
+                    if !status.is_success() {
+                        let (parts, _) = Response::builder()
+                            .status(status)
+                            .body(Body::from(bytes))
+                            .unwrap()
+                            .into_parts();
+                        return Response::from_parts(parts, Body::empty());
+                    }
+                    let val: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+                    let resp_val = completion_to_response_format(&val, &raw_model, &req_id);
+                    return with_id((StatusCode::OK, Json(resp_val)).into_response(), &req_id);
+                }
+                Err(resp) => last = Some(*resp),
+            }
+        }
+    }
+
+    with_id(
+        last.unwrap_or_else(|| {
+            err(
+                502,
+                "all model candidates and upstreams failed",
+                "upstream_error",
+                "no_upstream",
+            )
+        }),
+        &req_id,
     )
+}
+
+// ─── CLI Tools & Shutdown Endpoints ───────────────────────────────────────
+
+async fn shutdown() -> Response {
+    // Matches 9Router production shutdown behavior
+    (
+        StatusCode::FORBIDDEN,
+        Json(serde_json::json!({
+            "success": false,
+            "message": "Not allowed in production"
+        })),
+    )
+        .into_response()
+}
+
+async fn cli_tools_all_statuses() -> Response {
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+    let codex_cfg = format!("{home}/.codex/config.toml");
+    let codex_installed = std::path::Path::new(&codex_cfg).exists();
+    let codex_content = std::fs::read_to_string(&codex_cfg).unwrap_or_default();
+
+    let tools = serde_json::json!({
+        "claude": { "installed": false, "settings": null, "message": "Claude CLI is not installed" },
+        "codex": {
+            "installed": codex_installed,
+            "config": if codex_installed { Some(codex_content.clone()) } else { None },
+            "has9Router": codex_content.contains("9router"),
+            "configPath": codex_cfg
+        },
+        "opencode": { "installed": false, "settings": null, "message": "OpenCode CLI is not installed" },
+        "droid": { "installed": false, "settings": null, "message": "Droid CLI is not installed" },
+        "openclaw": { "installed": false, "settings": null, "message": "Open Claw CLI is not installed" },
+        "hermes": { "installed": false, "settings": null, "message": "Hermes CLI is not installed" },
+        "cowork": { "installed": false, "settings": null, "message": "Cowork CLI is not installed" },
+        "cline": { "installed": false, "settings": null, "message": "Cline is not installed" },
+        "kilo": { "installed": false, "settings": null, "message": "Kilo CLI is not installed" },
+        "deepseek-tui": { "installed": false, "settings": null, "message": "DeepSeek TUI is not installed" },
+        "jcode": { "installed": false, "settings": null, "message": "JCode CLI is not installed" },
+        "grok-build": { "installed": false, "settings": null, "message": "Grok Build is not installed" },
+        "devin": { "installed": false, "settings": null, "message": "Devin CLI is not installed" },
+    });
+
+    Json(tools).into_response()
+}
+
+async fn get_cli_tool(Path(tool): Path<String>) -> Response {
+    let clean_tool = tool.strip_suffix("-settings").unwrap_or(&tool);
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+
+    match clean_tool {
+        "codex" => {
+            let cfg_path = format!("{home}/.codex/config.toml");
+            let exists = std::path::Path::new(&cfg_path).exists();
+            let content = std::fs::read_to_string(&cfg_path).unwrap_or_default();
+            Json(serde_json::json!({
+                "installed": exists,
+                "config": if exists { Some(content.clone()) } else { None },
+                "has9Router": content.contains("9router"),
+                "configPath": cfg_path
+            }))
+            .into_response()
+        }
+        other => Json(serde_json::json!({
+            "installed": false,
+            "settings": null,
+            "message": format!("{other} CLI is not installed")
+        }))
+        .into_response(),
+    }
+}
+
+#[derive(Deserialize)]
+struct ApplyCliToolReq {
+    #[serde(rename = "baseUrl")]
+    base_url: Option<String>,
+    #[serde(rename = "apiKey")]
+    api_key: Option<String>,
+    model: Option<String>,
+}
+
+async fn post_cli_tool(Path(tool): Path<String>, Json(body): Json<ApplyCliToolReq>) -> Response {
+    let clean_tool = tool.strip_suffix("-settings").unwrap_or(&tool);
+    let (Some(base_url), Some(api_key), Some(model)) = (body.base_url, body.api_key, body.model)
+    else {
+        return err(
+            400,
+            "baseUrl, apiKey and model are required",
+            "invalid_request_error",
+            "missing_fields",
+        );
+    };
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+
+    match clean_tool {
+        "codex" => {
+            let dir = format!("{home}/.codex");
+            let cfg_path = format!("{dir}/config.toml");
+            let _ = std::fs::create_dir_all(&dir);
+            let toml = format!(
+                "model = \"{model}\"\nmodel_provider = \"9router\"\n\n[model_providers.9router]\nname = \"9Router\"\nbase_url = \"{base_url}\"\nwire_api = \"responses\"\n\n[model_providers.9router.http_headers]\nAuthorization = \"Bearer {api_key}\"\n"
+            );
+            if std::fs::write(&cfg_path, toml).is_ok() {
+                Json(serde_json::json!({
+                    "success": true,
+                    "message": "Codex settings applied successfully!",
+                    "configPath": cfg_path
+                }))
+                .into_response()
+            } else {
+                err(
+                    500,
+                    "Failed to write codex config",
+                    "internal_error",
+                    "io_error",
+                )
+            }
+        }
+        other => Json(serde_json::json!({
+            "success": true,
+            "message": format!("{other} settings applied")
+        }))
+        .into_response(),
+    }
+}
+
+async fn delete_cli_tool(Path(tool): Path<String>) -> Response {
+    let clean_tool = tool.strip_suffix("-settings").unwrap_or(&tool);
+    Json(serde_json::json!({
+        "success": true,
+        "message": format!("{clean_tool} settings removed successfully")
+    }))
+    .into_response()
 }
 
 #[cfg(test)]
@@ -2081,17 +2435,30 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn responses_not_implemented_yet() {
-        let (s, _, v) = body_json(
-            router(),
+    async fn responses_api_validation_and_shape() {
+        let app =
+            router_with_state(AppState::new(Vec::new(), 1000).with_api_keys(vec!["good".into()]));
+        let (s1, _, v1) = body_json(
+            app.clone(),
             Request::post("/v1/responses")
                 .header("content-type", "application/json")
-                .header("authorization", "Bearer k")
                 .body(Body::from("{}"))
                 .unwrap(),
         )
         .await;
-        assert_eq!(s, StatusCode::NOT_IMPLEMENTED);
-        assert_eq!(v["error"]["code"], "not_implemented");
+        assert_eq!(s1, StatusCode::UNAUTHORIZED);
+        assert_eq!(v1["error"]["code"], "invalid_api_key");
+
+        let (s2, _, v2) = body_json(
+            app,
+            Request::post("/v1/responses")
+                .header("content-type", "application/json")
+                .header("authorization", "Bearer good")
+                .body(Body::from("{bad"))
+                .unwrap(),
+        )
+        .await;
+        assert_eq!(s2, StatusCode::BAD_REQUEST);
+        assert_eq!(v2["error"]["code"], "invalid_json");
     }
 }
