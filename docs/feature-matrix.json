@@ -1,6 +1,6 @@
 {
   "version": "0.7.0",
-  "lastUpdated": "2026-09-12",
+  "lastUpdated": "2026-09-13",
   "summary": {
     "totalClaimedFeatures": 195,
     "verified": 44,
@@ -2208,6 +2208,1348 @@
       ],
       "status": "Blocked",
       "reason": "custom X25519+AES-GCM callback encryption; needs crypto deps"
+    },
+    {
+      "id": "mgmt.keys",
+      "name": "keys CRUD (list/create/get/update/delete)",
+      "endpoint": "/api/keys",
+      "original": "9router src/app/api/api/keys",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.keys.id",
+      "name": "keys CRUD (list/create/get/update/delete)",
+      "endpoint": "/api/keys/[id]",
+      "original": "9router src/app/api/api/keys/[id]",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.locale",
+      "name": "locale set + cookie",
+      "endpoint": "/api/locale",
+      "original": "9router src/app/api/api/locale",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.tags",
+      "name": "ollama tags static mirror",
+      "endpoint": "/api/tags",
+      "original": "9router src/app/api/api/tags",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.pricing",
+      "name": "pricing get/patch/reset",
+      "endpoint": "/api/pricing",
+      "original": "9router src/app/api/api/pricing",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.settings",
+      "name": "settings get+patch merge",
+      "endpoint": "/api/settings",
+      "original": "9router src/app/api/api/settings",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.settings.database",
+      "name": "db export/import",
+      "endpoint": "/api/settings/database",
+      "original": "9router src/app/api/api/settings/database",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.settings.proxy-test",
+      "name": "proxy TCP reachability probe",
+      "endpoint": "/api/settings/proxy-test",
+      "original": "9router src/app/api/api/settings/proxy-test",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.settings.require-login",
+      "name": "require-login flags",
+      "endpoint": "/api/settings/require-login",
+      "original": "9router src/app/api/api/settings/require-login",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers",
+      "name": "provider create",
+      "endpoint": "/api/providers",
+      "original": "9router src/app/api/api/providers",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.id",
+      "name": "provider get/update/delete",
+      "endpoint": "/api/providers/[id]",
+      "original": "9router src/app/api/api/providers/[id]",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.id.models",
+      "name": "provider live model list",
+      "endpoint": "/api/providers/[id]/models",
+      "original": "9router src/app/api/api/providers/[id]/models",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.id.test",
+      "name": "provider live credential probe",
+      "endpoint": "/api/providers/[id]/test",
+      "original": "9router src/app/api/api/providers/[id]/test",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.id.test-models",
+      "name": "provider model verification",
+      "endpoint": "/api/providers/[id]/test-models",
+      "original": "9router src/app/api/api/providers/[id]/test-models",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.client",
+      "name": "sanitized connection list",
+      "endpoint": "/api/providers/client",
+      "original": "9router src/app/api/api/providers/client",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.kilo.free-models",
+      "name": "kilo free-model proxy+cache",
+      "endpoint": "/api/providers/kilo/free-models",
+      "original": "9router src/app/api/api/providers/kilo/free-models",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.suggested-models",
+      "name": "catalog suggestions",
+      "endpoint": "/api/providers/suggested-models",
+      "original": "9router src/app/api/api/providers/suggested-models",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.test-batch",
+      "name": "batch probe",
+      "endpoint": "/api/providers/test-batch",
+      "original": "9router src/app/api/api/providers/test-batch",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.providers.validate",
+      "name": "provider validation",
+      "endpoint": "/api/providers/validate",
+      "original": "9router src/app/api/api/providers/validate",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.models",
+      "name": "alias set (PUT)",
+      "endpoint": "/api/models",
+      "original": "9router src/app/api/api/models",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.models.availability",
+      "name": "model locks via kv",
+      "endpoint": "/api/models/availability",
+      "original": "9router src/app/api/api/models/availability",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.models.catalog-sync",
+      "name": "catalog summary",
+      "endpoint": "/api/models/catalog-sync",
+      "original": "9router src/app/api/api/models/catalog-sync",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.models.custom",
+      "name": "custom models kv CRUD",
+      "endpoint": "/api/models/custom",
+      "original": "9router src/app/api/api/models/custom",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.models.disabled",
+      "name": "disabled models kv",
+      "endpoint": "/api/models/disabled",
+      "original": "9router src/app/api/api/models/disabled",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.models.test",
+      "name": "catalog model check",
+      "endpoint": "/api/models/test",
+      "original": "9router src/app/api/api/models/test",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.history",
+      "name": "usage totals",
+      "endpoint": "/api/usage/history",
+      "original": "9router src/app/api/api/usage/history",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.chart",
+      "name": "usage chart",
+      "endpoint": "/api/usage/chart",
+      "original": "9router src/app/api/api/usage/chart",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.logs",
+      "name": "recent usage logs",
+      "endpoint": "/api/usage/logs",
+      "original": "9router src/app/api/api/usage/logs",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.request-logs",
+      "name": "recent usage logs",
+      "endpoint": "/api/usage/request-logs",
+      "original": "9router src/app/api/api/usage/request-logs",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.request-details",
+      "name": "request details",
+      "endpoint": "/api/usage/request-details",
+      "original": "9router src/app/api/api/usage/request-details",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.providers",
+      "name": "usage by provider",
+      "endpoint": "/api/usage/providers",
+      "original": "9router src/app/api/api/usage/providers",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.stream",
+      "name": "usage SSE snapshot",
+      "endpoint": "/api/usage/stream",
+      "original": "9router src/app/api/api/usage/stream",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.connectionId",
+      "name": "connection usage",
+      "endpoint": "/api/usage/[connectionId]",
+      "original": "9router src/app/api/api/usage/[connectionId]",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.usage.connectionId.codex-reset-credits",
+      "name": "BLOCKED live provider session",
+      "endpoint": "/api/usage/[connectionId]/codex-reset-credits",
+      "original": "9router src/app/api/api/usage/[connectionId]/codex-reset-credits",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.oauth.codex.bulk-import",
+      "name": "bulk token import",
+      "endpoint": "/api/oauth/codex/bulk-import",
+      "original": "9router src/app/api/api/oauth/codex/bulk-import",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.codex.import-token",
+      "name": "codex access-token import + JWT email",
+      "endpoint": "/api/oauth/codex/import-token",
+      "original": "9router src/app/api/api/oauth/codex/import-token",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.cursor.auto-import",
+      "name": "local credential probe",
+      "endpoint": "/api/oauth/cursor/auto-import",
+      "original": "9router src/app/api/api/oauth/cursor/auto-import",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.cursor.import",
+      "name": "token import",
+      "endpoint": "/api/oauth/cursor/import",
+      "original": "9router src/app/api/api/oauth/cursor/import",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.gitlab.pat",
+      "name": "PAT import + live validation",
+      "endpoint": "/api/oauth/gitlab/pat",
+      "original": "9router src/app/api/api/oauth/gitlab/pat",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.grok-cli.bulk-import",
+      "name": "bulk token import",
+      "endpoint": "/api/oauth/grok-cli/bulk-import",
+      "original": "9router src/app/api/api/oauth/grok-cli/bulk-import",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.iflow.cookie",
+      "name": "cookie import",
+      "endpoint": "/api/oauth/iflow/cookie",
+      "original": "9router src/app/api/api/oauth/iflow/cookie",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.kiro.api-key",
+      "name": "api-key import",
+      "endpoint": "/api/oauth/kiro/api-key",
+      "original": "9router src/app/api/api/oauth/kiro/api-key",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.kiro.auto-import",
+      "name": "local credential probe",
+      "endpoint": "/api/oauth/kiro/auto-import",
+      "original": "9router src/app/api/api/oauth/kiro/auto-import",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.kiro.import",
+      "name": "token import",
+      "endpoint": "/api/oauth/kiro/import",
+      "original": "9router src/app/api/api/oauth/kiro/import",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.kiro.import-cli-proxy",
+      "name": "token import",
+      "endpoint": "/api/oauth/kiro/import-cli-proxy",
+      "original": "9router src/app/api/api/oauth/kiro/import-cli-proxy",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.kiro.social-authorize",
+      "name": "Cognito PKCE URL build",
+      "endpoint": "/api/oauth/kiro/social-authorize",
+      "original": "9router src/app/api/api/oauth/kiro/social-authorize",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.kiro.social-exchange",
+      "name": "Cognito code exchange + store",
+      "endpoint": "/api/oauth/kiro/social-exchange",
+      "original": "9router src/app/api/api/oauth/kiro/social-exchange",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.xiaomi-mimo.api-key",
+      "name": "api-key import",
+      "endpoint": "/api/oauth/xiaomi-mimo/api-key",
+      "original": "9router src/app/api/api/oauth/xiaomi-mimo/api-key",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.oauth.xiaomi-mimo.auto-import",
+      "name": "local credential probe",
+      "endpoint": "/api/oauth/xiaomi-mimo/auto-import",
+      "original": "9router src/app/api/api/oauth/xiaomi-mimo/auto-import",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.cli-tools.antigravity-mitm",
+      "name": "status/config; control 501",
+      "endpoint": "/api/cli-tools/antigravity-mitm",
+      "original": "9router src/app/api/api/cli-tools/antigravity-mitm",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Partial"
+    },
+    {
+      "id": "mgmt.cli-tools.antigravity-mitm.alias",
+      "name": "mitm aliases kv",
+      "endpoint": "/api/cli-tools/antigravity-mitm/alias",
+      "original": "9router src/app/api/api/cli-tools/antigravity-mitm/alias",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.cli-tools.cowork-mcp-registry",
+      "name": "registry proxy + cache",
+      "endpoint": "/api/cli-tools/cowork-mcp-registry",
+      "original": "9router src/app/api/api/cli-tools/cowork-mcp-registry",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.cli-tools.cowork-mcp-tools",
+      "name": "MCP JSON-RPC probe",
+      "endpoint": "/api/cli-tools/cowork-mcp-tools",
+      "original": "9router src/app/api/api/cli-tools/cowork-mcp-tools",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.media-providers.tts.voices",
+      "name": "empty directory",
+      "endpoint": "/api/media-providers/tts/voices",
+      "original": "9router src/app/api/api/media-providers/tts/voices",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.media-providers.tts.deepgram.voices",
+      "name": "501 no TTS adapter",
+      "endpoint": "/api/media-providers/tts/deepgram/voices",
+      "original": "9router src/app/api/api/media-providers/tts/deepgram/voices",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.media-providers.tts.elevenlabs.voices",
+      "name": "501 no TTS adapter",
+      "endpoint": "/api/media-providers/tts/elevenlabs/voices",
+      "original": "9router src/app/api/api/media-providers/tts/elevenlabs/voices",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.media-providers.tts.inworld.voices",
+      "name": "501 no TTS adapter",
+      "endpoint": "/api/media-providers/tts/inworld/voices",
+      "original": "9router src/app/api/api/media-providers/tts/inworld/voices",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.media-providers.tts.minimax.voices",
+      "name": "501 no TTS adapter",
+      "endpoint": "/api/media-providers/tts/minimax/voices",
+      "original": "9router src/app/api/api/media-providers/tts/minimax/voices",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.v1.audio.speech",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/audio/speech",
+      "original": "9router src/app/api/api/v1/audio/speech",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.audio.transcriptions",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/audio/transcriptions",
+      "original": "9router src/app/api/api/v1/audio/transcriptions",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.audio.voices",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/audio/voices",
+      "original": "9router src/app/api/api/v1/audio/voices",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.embeddings",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/embeddings",
+      "original": "9router src/app/api/api/v1/embeddings",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.images.generations",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/images/generations",
+      "original": "9router src/app/api/api/v1/images/generations",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.messages.count_tokens",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/messages/count_tokens",
+      "original": "9router src/app/api/api/v1/messages/count_tokens",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.models.model",
+      "name": "catalog model detail",
+      "endpoint": "/api/v1/models/[...model]",
+      "original": "9router src/app/api/api/v1/models/[...model]",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.responses.compact",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/responses/compact",
+      "original": "9router src/app/api/api/v1/responses/compact",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.search",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/search",
+      "original": "9router src/app/api/api/v1/search",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.videos.id",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/videos/[id]",
+      "original": "9router src/app/api/api/v1/videos/[id]",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.videos.edits",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/videos/edits",
+      "original": "9router src/app/api/api/v1/videos/edits",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.videos.extensions",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/videos/extensions",
+      "original": "9router src/app/api/api/v1/videos/extensions",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.videos.generations",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/videos/generations",
+      "original": "9router src/app/api/api/v1/videos/generations",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.web.fetch",
+      "name": "upstream passthrough",
+      "endpoint": "/api/v1/web/fetch",
+      "original": "9router src/app/api/api/v1/web/fetch",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.v1.api.chat",
+      "name": "delegates to chat pipeline",
+      "endpoint": "/api/v1/api/chat",
+      "original": "9router src/app/api/api/v1/api/chat",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.auth.login",
+      "name": "local password auth + lockout",
+      "endpoint": "/api/auth/login",
+      "original": "9router src/app/api/api/auth/login",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.auth.logout",
+      "name": "logout + cookie clear",
+      "endpoint": "/api/auth/logout",
+      "original": "9router src/app/api/api/auth/logout",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.auth.oidc.callback",
+      "name": "enterprise SSO 403",
+      "endpoint": "/api/auth/oidc/callback",
+      "original": "9router src/app/api/api/auth/oidc/callback",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.auth.oidc.start",
+      "name": "enterprise SSO 403",
+      "endpoint": "/api/auth/oidc/start",
+      "original": "9router src/app/api/api/auth/oidc/start",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.auth.oidc.test",
+      "name": "enterprise SSO 403",
+      "endpoint": "/api/auth/oidc/test",
+      "original": "9router src/app/api/api/auth/oidc/test",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.auth.reset-password",
+      "name": "local password reset",
+      "endpoint": "/api/auth/reset-password",
+      "original": "9router src/app/api/api/auth/reset-password",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.auth.saml.acs",
+      "name": "enterprise SSO 403",
+      "endpoint": "/api/auth/saml/acs",
+      "original": "9router src/app/api/api/auth/saml/acs",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.auth.saml.metadata",
+      "name": "enterprise SSO 403",
+      "endpoint": "/api/auth/saml/metadata",
+      "original": "9router src/app/api/api/auth/saml/metadata",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.auth.saml.start",
+      "name": "enterprise SSO 403",
+      "endpoint": "/api/auth/saml/start",
+      "original": "9router src/app/api/api/auth/saml/start",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.auth.saml.test",
+      "name": "enterprise SSO 403",
+      "endpoint": "/api/auth/saml/test",
+      "original": "9router src/app/api/api/auth/saml/test",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.provider-nodes",
+      "name": "nodes CRUD",
+      "endpoint": "/api/provider-nodes",
+      "original": "9router src/app/api/api/provider-nodes",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.provider-nodes.id",
+      "name": "nodes CRUD",
+      "endpoint": "/api/provider-nodes/[id]",
+      "original": "9router src/app/api/api/provider-nodes/[id]",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.provider-nodes.validate",
+      "name": "node validation",
+      "endpoint": "/api/provider-nodes/validate",
+      "original": "9router src/app/api/api/provider-nodes/validate",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.proxy-pools",
+      "name": "pools CRUD",
+      "endpoint": "/api/proxy-pools",
+      "original": "9router src/app/api/api/proxy-pools",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.proxy-pools.id",
+      "name": "pools CRUD",
+      "endpoint": "/api/proxy-pools/[id]",
+      "original": "9router src/app/api/api/proxy-pools/[id]",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.proxy-pools.id.test",
+      "name": "pool TCP probe",
+      "endpoint": "/api/proxy-pools/[id]/test",
+      "original": "9router src/app/api/api/proxy-pools/[id]/test",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.proxy-pools.cloudflare-deploy",
+      "name": "501 external account",
+      "endpoint": "/api/proxy-pools/cloudflare-deploy",
+      "original": "9router src/app/api/api/proxy-pools/cloudflare-deploy",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.proxy-pools.deno-deploy",
+      "name": "501 external account",
+      "endpoint": "/api/proxy-pools/deno-deploy",
+      "original": "9router src/app/api/api/proxy-pools/deno-deploy",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.proxy-pools.vercel-deploy",
+      "name": "501 external account",
+      "endpoint": "/api/proxy-pools/vercel-deploy",
+      "original": "9router src/app/api/api/proxy-pools/vercel-deploy",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.translator.send",
+      "name": "501 needs executor",
+      "endpoint": "/api/translator/send",
+      "original": "9router src/app/api/api/translator/send",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.translator.translate",
+      "name": "step-1 detect; rest 501",
+      "endpoint": "/api/translator/translate",
+      "original": "9router src/app/api/api/translator/translate",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Partial"
+    },
+    {
+      "id": "mgmt.translator.load",
+      "name": "allowlisted file read",
+      "endpoint": "/api/translator/load",
+      "original": "9router src/app/api/api/translator/load",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.translator.save",
+      "name": "allowlisted file write",
+      "endpoint": "/api/translator/save",
+      "original": "9router src/app/api/api/translator/save",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.translator.console-logs",
+      "name": "in-process log buffer",
+      "endpoint": "/api/translator/console-logs",
+      "original": "9router src/app/api/api/translator/console-logs",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.translator.console-logs.stream",
+      "name": "SSE log snapshot",
+      "endpoint": "/api/translator/console-logs/stream",
+      "original": "9router src/app/api/api/translator/console-logs/stream",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.mcp.plugin.message",
+      "name": "501 no MCP servers",
+      "endpoint": "/api/mcp/[plugin]/message",
+      "original": "9router src/app/api/api/mcp/[plugin]/message",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.mcp.plugin.sse",
+      "name": "501 no MCP servers",
+      "endpoint": "/api/mcp/[plugin]/sse",
+      "original": "9router src/app/api/api/mcp/[plugin]/sse",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.headroom.status",
+      "name": "static not-running status",
+      "endpoint": "/api/headroom/status",
+      "original": "9router src/app/api/api/headroom/status",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.headroom.extras",
+      "name": "extras kv CRUD",
+      "endpoint": "/api/headroom/extras",
+      "original": "9router src/app/api/api/headroom/extras",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.headroom.start",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/headroom/start",
+      "original": "9router src/app/api/api/headroom/start",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.headroom.stop",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/headroom/stop",
+      "original": "9router src/app/api/api/headroom/stop",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.headroom.restart",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/headroom/restart",
+      "original": "9router src/app/api/api/headroom/restart",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.pxpipe.status",
+      "name": "settings-backed status",
+      "endpoint": "/api/pxpipe/status",
+      "original": "9router src/app/api/api/pxpipe/status",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.pxpipe.stats",
+      "name": "settings-backed status",
+      "endpoint": "/api/pxpipe/stats",
+      "original": "9router src/app/api/api/pxpipe/stats",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.pxpipe.logs",
+      "name": "empty logs",
+      "endpoint": "/api/pxpipe/logs",
+      "original": "9router src/app/api/api/pxpipe/logs",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.pxpipe.health",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/pxpipe/health",
+      "original": "9router src/app/api/api/pxpipe/health",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.pxpipe.install",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/pxpipe/install",
+      "original": "9router src/app/api/api/pxpipe/install",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.pxpipe.start",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/pxpipe/start",
+      "original": "9router src/app/api/api/pxpipe/start",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.pxpipe.stop",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/pxpipe/stop",
+      "original": "9router src/app/api/api/pxpipe/stop",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.pxpipe.restart",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/pxpipe/restart",
+      "original": "9router src/app/api/api/pxpipe/restart",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.tunnel.status",
+      "name": "static status",
+      "endpoint": "/api/tunnel/status",
+      "original": "9router src/app/api/api/tunnel/status",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.tunnel.enable",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/tunnel/enable",
+      "original": "9router src/app/api/api/tunnel/enable",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.tunnel.disable",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/tunnel/disable",
+      "original": "9router src/app/api/api/tunnel/disable",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.tunnel.tailscale-check",
+      "name": "static check",
+      "endpoint": "/api/tunnel/tailscale-check",
+      "original": "9router src/app/api/api/tunnel/tailscale-check",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.tunnel.tailscale-enable",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/tunnel/tailscale-enable",
+      "original": "9router src/app/api/api/tunnel/tailscale-enable",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.tunnel.tailscale-disable",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/tunnel/tailscale-disable",
+      "original": "9router src/app/api/api/tunnel/tailscale-disable",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.tunnel.tailscale-install",
+      "name": "501 daemon unmanaged",
+      "endpoint": "/api/tunnel/tailscale-install",
+      "original": "9router src/app/api/api/tunnel/tailscale-install",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Blocked"
+    },
+    {
+      "id": "mgmt.version.shutdown",
+      "name": "403 production policy",
+      "endpoint": "/api/version/shutdown",
+      "original": "9router src/app/api/api/version/shutdown",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
+    },
+    {
+      "id": "mgmt.version.update",
+      "name": "no-update object",
+      "endpoint": "/api/version/update",
+      "original": "9router src/app/api/api/version/update",
+      "rustModule": "nine_gateway::mgmt",
+      "tests": [
+        "crates/gateway/tests/mgmt_routes.rs"
+      ],
+      "status": "Implemented"
     }
   ],
   "deferredOrUnsupported": [

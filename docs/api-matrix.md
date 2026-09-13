@@ -6,29 +6,29 @@ Discovered Next.js route dirs under `.next-cli-build/server/app/api`. Rewrites: 
 |---|---|---|
 | `/api` | gateway::routes | [ ] Discovered |
 | `/api/auth` | gateway::routes | [ ] Discovered |
-| `/api/auth/login` | gateway::routes | [ ] Discovered |
-| `/api/auth/logout` | gateway::routes | [ ] Discovered |
+| `/api/auth/login` | gateway::mgmt::local | [x] Implemented
+| `/api/auth/logout` | gateway::mgmt::logout | [x] Implemented
 | `/api/auth/oidc` | gateway::routes | [ ] Discovered |
-| `/api/auth/oidc/callback` | gateway::routes | [ ] Discovered |
-| `/api/auth/oidc/start` | gateway::routes | [ ] Discovered |
-| `/api/auth/oidc/test` | gateway::routes | [ ] Discovered |
-| `/api/auth/reset-password` | gateway::routes | [ ] Discovered |
+| `/api/auth/oidc/callback` | gateway::mgmt::enterprise | [x] Blocked
+| `/api/auth/oidc/start` | gateway::mgmt::enterprise | [x] Blocked
+| `/api/auth/oidc/test` | gateway::mgmt::enterprise | [x] Blocked
+| `/api/auth/reset-password` | gateway::mgmt::local | [x] Implemented
 | `/api/auth/saml` | gateway::routes | [ ] Discovered |
-| `/api/auth/saml/acs` | gateway::routes | [ ] Discovered |
-| `/api/auth/saml/metadata` | gateway::routes | [ ] Discovered |
-| `/api/auth/saml/start` | gateway::routes | [ ] Discovered |
-| `/api/auth/saml/test` | gateway::routes | [ ] Discovered |
+| `/api/auth/saml/acs` | gateway::mgmt::enterprise | [x] Blocked
+| `/api/auth/saml/metadata` | gateway::mgmt::enterprise | [x] Blocked
+| `/api/auth/saml/start` | gateway::mgmt::enterprise | [x] Blocked
+| `/api/auth/saml/test` | gateway::mgmt::enterprise | [x] Blocked
 | `/api/auth/status` | gateway::routes | [ ] Discovered |
 | `/api/cli-tools` | gateway::routes | [ ] Discovered |
 | `/api/cli-tools/all-statuses` | gateway::routes | [ ] Discovered |
-| `/api/cli-tools/antigravity-mitm` | gateway::routes | [ ] Discovered |
-| `/api/cli-tools/antigravity-mitm/alias` | gateway::routes | [ ] Discovered |
+| `/api/cli-tools/antigravity-mitm` | gateway::mgmt::status/config; | [x] Partial
+| `/api/cli-tools/antigravity-mitm/alias` | gateway::mgmt::mitm | [x] Implemented
 | `/api/cli-tools/claude-settings` | gateway::routes | [ ] Discovered |
 | `/api/cli-tools/cline-settings` | gateway::routes | [ ] Discovered |
 | `/api/cli-tools/codex-settings` | gateway::routes | [ ] Discovered |
 | `/api/cli-tools/copilot-settings` | gateway::routes | [ ] Discovered |
-| `/api/cli-tools/cowork-mcp-registry` | gateway::routes | [ ] Discovered |
-| `/api/cli-tools/cowork-mcp-tools` | gateway::routes | [ ] Discovered |
+| `/api/cli-tools/cowork-mcp-registry` | gateway::mgmt::registry | [x] Implemented
+| `/api/cli-tools/cowork-mcp-tools` | gateway::mgmt::MCP | [x] Implemented
 | `/api/cli-tools/cowork-settings` | gateway::routes | [ ] Discovered |
 | `/api/cli-tools/deepseek-tui-settings` | gateway::routes | [ ] Discovered |
 | `/api/cli-tools/devin-settings` | gateway::routes | [ ] Discovered |
@@ -42,160 +42,160 @@ Discovered Next.js route dirs under `.next-cli-build/server/app/api`. Rewrites: 
 | `/api/combos` | gateway::routes | [ ] Discovered |
 | `/api/combos/[id]` | gateway::routes | [ ] Discovered |
 | `/api/headroom` | gateway::routes | [ ] Discovered |
-| `/api/headroom/extras` | gateway::routes | [ ] Discovered |
+| `/api/headroom/extras` | gateway::mgmt::extras | [x] Implemented
 | `/api/headroom/proxy` | gateway::routes | [ ] Discovered |
 | `/api/headroom/proxy/[...path]` | gateway::routes | [ ] Discovered |
-| `/api/headroom/restart` | gateway::routes | [ ] Discovered |
-| `/api/headroom/start` | gateway::routes | [ ] Discovered |
-| `/api/headroom/status` | gateway::routes | [ ] Discovered |
-| `/api/headroom/stop` | gateway::routes | [ ] Discovered |
+| `/api/headroom/restart` | gateway::mgmt::501 | [x] Blocked
+| `/api/headroom/start` | gateway::mgmt::501 | [x] Blocked
+| `/api/headroom/status` | gateway::mgmt::static | [x] Implemented
+| `/api/headroom/stop` | gateway::mgmt::501 | [x] Blocked
 | `/api/health` | gateway::routes | [ ] Discovered |
 | `/api/init` | gateway::routes | [ ] Discovered |
-| `/api/keys` | gateway::routes | [ ] Discovered |
-| `/api/keys/[id]` | gateway::routes | [ ] Discovered |
-| `/api/locale` | gateway::routes | [ ] Discovered |
+| `/api/keys` | gateway::mgmt::keys | [x] Implemented
+| `/api/keys/[id]` | gateway::mgmt::keys | [x] Implemented
+| `/api/locale` | gateway::mgmt::locale | [x] Implemented
 | `/api/mcp` | gateway::routes | [ ] Discovered |
 | `/api/mcp/[plugin]` | gateway::routes | [ ] Discovered |
-| `/api/mcp/[plugin]/message` | gateway::routes | [ ] Discovered |
-| `/api/mcp/[plugin]/sse` | gateway::routes | [ ] Discovered |
+| `/api/mcp/[plugin]/message` | gateway::mgmt::501 | [x] Blocked
+| `/api/mcp/[plugin]/sse` | gateway::mgmt::501 | [x] Blocked
 | `/api/media-providers` | gateway::routes | [ ] Discovered |
 | `/api/media-providers/tts` | gateway::routes | [ ] Discovered |
 | `/api/media-providers/tts/deepgram` | gateway::routes | [ ] Discovered |
-| `/api/media-providers/tts/deepgram/voices` | gateway::routes | [ ] Discovered |
+| `/api/media-providers/tts/deepgram/voices` | gateway::mgmt::501 | [x] Blocked
 | `/api/media-providers/tts/elevenlabs` | gateway::routes | [ ] Discovered |
-| `/api/media-providers/tts/elevenlabs/voices` | gateway::routes | [ ] Discovered |
+| `/api/media-providers/tts/elevenlabs/voices` | gateway::mgmt::501 | [x] Blocked
 | `/api/media-providers/tts/inworld` | gateway::routes | [ ] Discovered |
-| `/api/media-providers/tts/inworld/voices` | gateway::routes | [ ] Discovered |
+| `/api/media-providers/tts/inworld/voices` | gateway::mgmt::501 | [x] Blocked
 | `/api/media-providers/tts/minimax` | gateway::routes | [ ] Discovered |
-| `/api/media-providers/tts/minimax/voices` | gateway::routes | [ ] Discovered |
-| `/api/media-providers/tts/voices` | gateway::routes | [ ] Discovered |
-| `/api/models` | gateway::routes | [ ] Discovered |
+| `/api/media-providers/tts/minimax/voices` | gateway::mgmt::501 | [x] Blocked
+| `/api/media-providers/tts/voices` | gateway::mgmt::empty | [x] Implemented
+| `/api/models` | gateway::mgmt::alias | [x] Implemented
 | `/api/models/alias` | gateway::routes | [ ] Discovered |
-| `/api/models/availability` | gateway::routes | [ ] Discovered |
-| `/api/models/catalog-sync` | gateway::routes | [ ] Discovered |
-| `/api/models/custom` | gateway::routes | [ ] Discovered |
-| `/api/models/disabled` | gateway::routes | [ ] Discovered |
-| `/api/models/test` | gateway::routes | [ ] Discovered |
+| `/api/models/availability` | gateway::mgmt::model | [x] Implemented
+| `/api/models/catalog-sync` | gateway::mgmt::catalog | [x] Implemented
+| `/api/models/custom` | gateway::mgmt::custom | [x] Implemented
+| `/api/models/disabled` | gateway::mgmt::disabled | [x] Implemented
+| `/api/models/test` | gateway::mgmt::catalog | [x] Implemented
 | `/api/oauth` | gateway::routes | [ ] Discovered |
 | `/api/oauth/[provider]` | gateway::routes | [ ] Discovered |
 | `/api/oauth/[provider]/[action]` | gateway::routes | [ ] Discovered |
 | `/api/oauth/codex` | gateway::routes | [ ] Discovered |
-| `/api/oauth/codex/bulk-import` | gateway::routes | [ ] Discovered |
-| `/api/oauth/codex/import-token` | gateway::routes | [ ] Discovered |
+| `/api/oauth/codex/bulk-import` | gateway::mgmt::bulk | [x] Implemented
+| `/api/oauth/codex/import-token` | gateway::mgmt::codex | [x] Implemented
 | `/api/oauth/cursor` | gateway::routes | [ ] Discovered |
-| `/api/oauth/cursor/auto-import` | gateway::routes | [ ] Discovered |
-| `/api/oauth/cursor/import` | gateway::routes | [ ] Discovered |
+| `/api/oauth/cursor/auto-import` | gateway::mgmt::local | [x] Implemented
+| `/api/oauth/cursor/import` | gateway::mgmt::token | [x] Implemented
 | `/api/oauth/gitlab` | gateway::routes | [ ] Discovered |
-| `/api/oauth/gitlab/pat` | gateway::routes | [ ] Discovered |
+| `/api/oauth/gitlab/pat` | gateway::mgmt::PAT | [x] Implemented
 | `/api/oauth/grok-cli` | gateway::routes | [ ] Discovered |
-| `/api/oauth/grok-cli/bulk-import` | gateway::routes | [ ] Discovered |
+| `/api/oauth/grok-cli/bulk-import` | gateway::mgmt::bulk | [x] Implemented
 | `/api/oauth/iflow` | gateway::routes | [ ] Discovered |
-| `/api/oauth/iflow/cookie` | gateway::routes | [ ] Discovered |
+| `/api/oauth/iflow/cookie` | gateway::mgmt::cookie | [x] Implemented
 | `/api/oauth/kiro` | gateway::routes | [ ] Discovered |
-| `/api/oauth/kiro/api-key` | gateway::routes | [ ] Discovered |
-| `/api/oauth/kiro/auto-import` | gateway::routes | [ ] Discovered |
-| `/api/oauth/kiro/import` | gateway::routes | [ ] Discovered |
-| `/api/oauth/kiro/import-cli-proxy` | gateway::routes | [ ] Discovered |
-| `/api/oauth/kiro/social-authorize` | gateway::routes | [ ] Discovered |
-| `/api/oauth/kiro/social-exchange` | gateway::routes | [ ] Discovered |
+| `/api/oauth/kiro/api-key` | gateway::mgmt::api-key | [x] Implemented
+| `/api/oauth/kiro/auto-import` | gateway::mgmt::local | [x] Implemented
+| `/api/oauth/kiro/import` | gateway::mgmt::token | [x] Implemented
+| `/api/oauth/kiro/import-cli-proxy` | gateway::mgmt::token | [x] Implemented
+| `/api/oauth/kiro/social-authorize` | gateway::mgmt::Cognito | [x] Implemented
+| `/api/oauth/kiro/social-exchange` | gateway::mgmt::Cognito | [x] Implemented
 | `/api/oauth/xiaomi-mimo` | gateway::routes | [ ] Discovered |
-| `/api/oauth/xiaomi-mimo/api-key` | gateway::routes | [ ] Discovered |
-| `/api/oauth/xiaomi-mimo/auto-import` | gateway::routes | [ ] Discovered |
-| `/api/pricing` | gateway::routes | [ ] Discovered |
-| `/api/provider-nodes` | gateway::routes | [ ] Discovered |
-| `/api/provider-nodes/[id]` | gateway::routes | [ ] Discovered |
-| `/api/provider-nodes/validate` | gateway::routes | [ ] Discovered |
-| `/api/providers` | gateway::routes | [ ] Discovered |
-| `/api/providers/[id]` | gateway::routes | [ ] Discovered |
-| `/api/providers/[id]/models` | gateway::routes | [ ] Discovered |
-| `/api/providers/[id]/test` | gateway::routes | [ ] Discovered |
-| `/api/providers/[id]/test-models` | gateway::routes | [ ] Discovered |
-| `/api/providers/client` | gateway::routes | [ ] Discovered |
+| `/api/oauth/xiaomi-mimo/api-key` | gateway::mgmt::api-key | [x] Implemented
+| `/api/oauth/xiaomi-mimo/auto-import` | gateway::mgmt::local | [x] Implemented
+| `/api/pricing` | gateway::mgmt::pricing | [x] Implemented
+| `/api/provider-nodes` | gateway::mgmt::nodes | [x] Implemented
+| `/api/provider-nodes/[id]` | gateway::mgmt::nodes | [x] Implemented
+| `/api/provider-nodes/validate` | gateway::mgmt::node | [x] Implemented
+| `/api/providers` | gateway::mgmt::provider | [x] Implemented
+| `/api/providers/[id]` | gateway::mgmt::provider | [x] Implemented
+| `/api/providers/[id]/models` | gateway::mgmt::provider | [x] Implemented
+| `/api/providers/[id]/test` | gateway::mgmt::provider | [x] Implemented
+| `/api/providers/[id]/test-models` | gateway::mgmt::provider | [x] Implemented
+| `/api/providers/client` | gateway::mgmt::sanitized | [x] Implemented
 | `/api/providers/kilo` | gateway::routes | [ ] Discovered |
-| `/api/providers/kilo/free-models` | gateway::routes | [ ] Discovered |
-| `/api/providers/suggested-models` | gateway::routes | [ ] Discovered |
-| `/api/providers/test-batch` | gateway::routes | [ ] Discovered |
-| `/api/providers/validate` | gateway::routes | [ ] Discovered |
-| `/api/proxy-pools` | gateway::routes | [ ] Discovered |
-| `/api/proxy-pools/[id]` | gateway::routes | [ ] Discovered |
-| `/api/proxy-pools/[id]/test` | gateway::routes | [ ] Discovered |
-| `/api/proxy-pools/cloudflare-deploy` | gateway::routes | [ ] Discovered |
-| `/api/proxy-pools/deno-deploy` | gateway::routes | [ ] Discovered |
-| `/api/proxy-pools/vercel-deploy` | gateway::routes | [ ] Discovered |
+| `/api/providers/kilo/free-models` | gateway::mgmt::kilo | [x] Implemented
+| `/api/providers/suggested-models` | gateway::mgmt::catalog | [x] Implemented
+| `/api/providers/test-batch` | gateway::mgmt::batch | [x] Implemented
+| `/api/providers/validate` | gateway::mgmt::provider | [x] Implemented
+| `/api/proxy-pools` | gateway::mgmt::pools | [x] Implemented
+| `/api/proxy-pools/[id]` | gateway::mgmt::pools | [x] Implemented
+| `/api/proxy-pools/[id]/test` | gateway::mgmt::pool | [x] Implemented
+| `/api/proxy-pools/cloudflare-deploy` | gateway::mgmt::501 | [x] Blocked
+| `/api/proxy-pools/deno-deploy` | gateway::mgmt::501 | [x] Blocked
+| `/api/proxy-pools/vercel-deploy` | gateway::mgmt::501 | [x] Blocked
 | `/api/pxpipe` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/health` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/install` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/logs` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/restart` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/start` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/stats` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/status` | gateway::routes | [ ] Discovered |
-| `/api/pxpipe/stop` | gateway::routes | [ ] Discovered |
-| `/api/settings` | gateway::routes | [ ] Discovered |
-| `/api/settings/database` | gateway::routes | [ ] Discovered |
-| `/api/settings/proxy-test` | gateway::routes | [ ] Discovered |
-| `/api/settings/require-login` | gateway::routes | [ ] Discovered |
+| `/api/pxpipe/health` | gateway::mgmt::501 | [x] Blocked
+| `/api/pxpipe/install` | gateway::mgmt::501 | [x] Blocked
+| `/api/pxpipe/logs` | gateway::mgmt::empty | [x] Implemented
+| `/api/pxpipe/restart` | gateway::mgmt::501 | [x] Blocked
+| `/api/pxpipe/start` | gateway::mgmt::501 | [x] Blocked
+| `/api/pxpipe/stats` | gateway::mgmt::settings-backed | [x] Implemented
+| `/api/pxpipe/status` | gateway::mgmt::settings-backed | [x] Implemented
+| `/api/pxpipe/stop` | gateway::mgmt::501 | [x] Blocked
+| `/api/settings` | gateway::mgmt::settings | [x] Implemented
+| `/api/settings/database` | gateway::mgmt::db | [x] Implemented
+| `/api/settings/proxy-test` | gateway::mgmt::proxy | [x] Implemented
+| `/api/settings/require-login` | gateway::mgmt::require-login | [x] Implemented
 | `/api/shutdown` | gateway::routes | [ ] Discovered |
-| `/api/tags` | gateway::routes | [ ] Discovered |
+| `/api/tags` | gateway::mgmt::ollama | [x] Implemented
 | `/api/translator` | gateway::routes | [ ] Discovered |
-| `/api/translator/console-logs` | gateway::routes | [ ] Discovered |
-| `/api/translator/console-logs/stream` | gateway::routes | [ ] Discovered |
-| `/api/translator/load` | gateway::routes | [ ] Discovered |
-| `/api/translator/save` | gateway::routes | [ ] Discovered |
-| `/api/translator/send` | gateway::routes | [ ] Discovered |
-| `/api/translator/translate` | gateway::routes | [ ] Discovered |
+| `/api/translator/console-logs` | gateway::mgmt::in-process | [x] Implemented
+| `/api/translator/console-logs/stream` | gateway::mgmt::SSE | [x] Implemented
+| `/api/translator/load` | gateway::mgmt::allowlisted | [x] Implemented
+| `/api/translator/save` | gateway::mgmt::allowlisted | [x] Implemented
+| `/api/translator/send` | gateway::mgmt::501 | [x] Blocked
+| `/api/translator/translate` | gateway::mgmt::step-1 | [x] Partial
 | `/api/tunnel` | gateway::routes | [ ] Discovered |
-| `/api/tunnel/disable` | gateway::routes | [ ] Discovered |
-| `/api/tunnel/enable` | gateway::routes | [ ] Discovered |
-| `/api/tunnel/status` | gateway::routes | [ ] Discovered |
-| `/api/tunnel/tailscale-check` | gateway::routes | [ ] Discovered |
-| `/api/tunnel/tailscale-disable` | gateway::routes | [ ] Discovered |
-| `/api/tunnel/tailscale-enable` | gateway::routes | [ ] Discovered |
-| `/api/tunnel/tailscale-install` | gateway::routes | [ ] Discovered |
+| `/api/tunnel/disable` | gateway::mgmt::501 | [x] Blocked
+| `/api/tunnel/enable` | gateway::mgmt::501 | [x] Blocked
+| `/api/tunnel/status` | gateway::mgmt::static | [x] Implemented
+| `/api/tunnel/tailscale-check` | gateway::mgmt::static | [x] Implemented
+| `/api/tunnel/tailscale-disable` | gateway::mgmt::501 | [x] Blocked
+| `/api/tunnel/tailscale-enable` | gateway::mgmt::501 | [x] Blocked
+| `/api/tunnel/tailscale-install` | gateway::mgmt::501 | [x] Blocked
 | `/api/usage` | gateway::routes | [ ] Discovered |
-| `/api/usage/[connectionId]` | gateway::routes | [ ] Discovered |
-| `/api/usage/[connectionId]/codex-reset-credits` | gateway::routes | [ ] Discovered |
-| `/api/usage/chart` | gateway::routes | [ ] Discovered |
-| `/api/usage/history` | gateway::routes | [ ] Discovered |
-| `/api/usage/logs` | gateway::routes | [ ] Discovered |
-| `/api/usage/providers` | gateway::routes | [ ] Discovered |
-| `/api/usage/request-details` | gateway::routes | [ ] Discovered |
-| `/api/usage/request-logs` | gateway::routes | [ ] Discovered |
+| `/api/usage/[connectionId]` | gateway::mgmt::connection | [x] Implemented
+| `/api/usage/[connectionId]/codex-reset-credits` | gateway::mgmt::BLOCKED | [x] Blocked
+| `/api/usage/chart` | gateway::mgmt::usage | [x] Implemented
+| `/api/usage/history` | gateway::mgmt::usage | [x] Implemented
+| `/api/usage/logs` | gateway::mgmt::recent | [x] Implemented
+| `/api/usage/providers` | gateway::mgmt::usage | [x] Implemented
+| `/api/usage/request-details` | gateway::mgmt::request | [x] Implemented
+| `/api/usage/request-logs` | gateway::mgmt::recent | [x] Implemented
 | `/api/usage/stats` | gateway::routes | [ ] Discovered |
-| `/api/usage/stream` | gateway::routes | [ ] Discovered |
+| `/api/usage/stream` | gateway::mgmt::usage | [x] Implemented
 | `/api/v1` | gateway::routes | [ ] Discovered |
 | `/api/v1/api` | gateway::routes | [ ] Discovered |
-| `/api/v1/api/chat` | gateway::routes | [ ] Discovered |
+| `/api/v1/api/chat` | gateway::mgmt::delegates | [x] Implemented
 | `/api/v1/audio` | gateway::routes | [ ] Discovered |
-| `/api/v1/audio/speech` | gateway::routes | [ ] Discovered |
-| `/api/v1/audio/transcriptions` | gateway::routes | [ ] Discovered |
-| `/api/v1/audio/voices` | gateway::routes | [ ] Discovered |
+| `/api/v1/audio/speech` | gateway::mgmt::upstream | [x] Implemented
+| `/api/v1/audio/transcriptions` | gateway::mgmt::upstream | [x] Implemented
+| `/api/v1/audio/voices` | gateway::mgmt::upstream | [x] Implemented
 | `/api/v1/chat` | gateway::routes | [ ] Discovered |
 | `/api/v1/chat/completions` | gateway::routes | [ ] Discovered |
-| `/api/v1/embeddings` | gateway::routes | [ ] Discovered |
+| `/api/v1/embeddings` | gateway::mgmt::upstream | [x] Implemented
 | `/api/v1/images` | gateway::routes | [ ] Discovered |
-| `/api/v1/images/generations` | gateway::routes | [ ] Discovered |
+| `/api/v1/images/generations` | gateway::mgmt::upstream | [x] Implemented
 | `/api/v1/messages` | gateway::routes | [ ] Discovered |
-| `/api/v1/messages/count_tokens` | gateway::routes | [ ] Discovered |
+| `/api/v1/messages/count_tokens` | gateway::mgmt::upstream | [x] Implemented
 | `/api/v1/models` | gateway::routes | [ ] Discovered |
-| `/api/v1/models/[...model]` | gateway::routes | [ ] Discovered |
+| `/api/v1/models/[...model]` | gateway::mgmt::catalog | [x] Implemented
 | `/api/v1/models/info` | gateway::routes | [ ] Discovered |
 | `/api/v1/responses` | gateway::routes | [ ] Discovered |
-| `/api/v1/responses/compact` | gateway::routes | [ ] Discovered |
-| `/api/v1/search` | gateway::routes | [ ] Discovered |
+| `/api/v1/responses/compact` | gateway::mgmt::upstream | [x] Implemented
+| `/api/v1/search` | gateway::mgmt::upstream | [x] Implemented
 | `/api/v1/videos` | gateway::routes | [ ] Discovered |
-| `/api/v1/videos/[id]` | gateway::routes | [ ] Discovered |
-| `/api/v1/videos/edits` | gateway::routes | [ ] Discovered |
-| `/api/v1/videos/extensions` | gateway::routes | [ ] Discovered |
-| `/api/v1/videos/generations` | gateway::routes | [ ] Discovered |
+| `/api/v1/videos/[id]` | gateway::mgmt::upstream | [x] Implemented
+| `/api/v1/videos/edits` | gateway::mgmt::upstream | [x] Implemented
+| `/api/v1/videos/extensions` | gateway::mgmt::upstream | [x] Implemented
+| `/api/v1/videos/generations` | gateway::mgmt::upstream | [x] Implemented
 | `/api/v1/web` | gateway::routes | [ ] Discovered |
-| `/api/v1/web/fetch` | gateway::routes | [ ] Discovered |
+| `/api/v1/web/fetch` | gateway::mgmt::upstream | [x] Implemented
 | `/api/v1beta` | gateway::routes | [ ] Discovered |
 | `/api/v1beta/models` | gateway::routes | [ ] Discovered |
 | `/api/v1beta/models/[...path]` | gateway::routes | [ ] Discovered |
 | `/api/version` | gateway::routes | [ ] Discovered |
-| `/api/version/shutdown` | gateway::routes | [ ] Discovered |
-| `/api/version/update` | gateway::routes | [ ] Discovered |
+| `/api/version/shutdown` | gateway::mgmt::403 | [x] Implemented
+| `/api/version/update` | gateway::mgmt::no-update | [x] Implemented
 
 ## Key LLM endpoints
 

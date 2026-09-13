@@ -15,6 +15,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio_stream::wrappers::ReceiverStream;
 
+mod mgmt;
+
 #[derive(Clone)]
 pub struct Upstream {
     pub provider: &'static str,
@@ -161,7 +163,6 @@ pub fn router_with_state(state: AppState) -> Router {
         .route("/api/usage/stats", get(usage_stats))
         .route("/api/settings", get(settings))
         .route("/api/auth/status", get(auth_status))
-        .route("/api/keys", get(keys))
         .route("/api/shutdown", post(shutdown))
         .route("/api/cli-tools/all-statuses", get(cli_tools_all_statuses))
         .route(
@@ -181,6 +182,7 @@ pub fn router_with_state(state: AppState) -> Router {
                 .put(put_model_alias)
                 .delete(delete_model_alias),
         )
+        .merge(mgmt::router())
         .with_state(Arc::new(state))
 }
 
@@ -301,8 +303,17 @@ async fn usage_stats(State(st): State<Arc<AppState>>) -> Response {
     }
 }
 
-async fn settings() -> impl IntoResponse {
-    Json(serde_json::json!({
+async fn settings(State(st): State<Arc<AppState>>) -> Response {
+    let stored: Value = match &st.store {
+        Some(store) => {
+            let store = store.clone();
+            tokio::task::spawn_blocking(move || store.settings_get().unwrap_or(Value::Null))
+                .await
+                .unwrap_or(Value::Null)
+        }
+        None => Value::Null,
+    };
+    let mut v = serde_json::json!({
         "cloudEnabled": false,
         "tunnelEnabled": false,
         "tunnelUrl": "",
@@ -311,15 +322,17 @@ async fn settings() -> impl IntoResponse {
         "tailscaleUrl": "",
         "stickyRoundRobinLimit": 3,
         "providerStrategies": {}
-    }))
+    });
+    if let (Some(map), Some(patch)) = (v.as_object_mut(), stored.as_object()) {
+        for (k, val) in patch {
+            map.insert(k.clone(), val.clone());
+        }
+    }
+    Json(v).into_response()
 }
 
-async fn auth_status() -> impl IntoResponse {
-    Json(serde_json::json!({"ok": true, "authenticated": false}))
-}
-
-async fn keys() -> impl IntoResponse {
-    Json(serde_json::json!({"keys": []}))
+async fn auth_status(headers: HeaderMap) -> impl IntoResponse {
+    Json(serde_json::json!({"ok": true, "authenticated": mgmt::dashboard_authed(&headers)}))
 }
 
 async fn oauth_start(State(st): State<Arc<AppState>>, Path(provider): Path<String>) -> Response {
@@ -1054,7 +1067,7 @@ fn retry(resp: Response) -> Result<Response, Box<Response>> {
     Err(Box::new(resp))
 }
 
-fn err(status: u16, message: &str, typ: &str, code: &str) -> Response {
+pub(crate) fn err(status: u16, message: &str, typ: &str, code: &str) -> Response {
     let status = StatusCode::from_u16(status).unwrap_or(StatusCode::BAD_GATEWAY);
     (
         status,
@@ -1389,7 +1402,7 @@ fn parse_messages(v: &serde_json::Value) -> Vec<nine_providers::ChatMessage> {
         .collect()
 }
 
-async fn chat_completions(
+pub(crate) async fn chat_completions(
     State(st): State<Arc<AppState>>,
     headers: HeaderMap,
     body: Bytes,

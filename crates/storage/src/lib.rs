@@ -595,3 +595,5 @@ mod tests {
         assert_eq!(s.usage_totals().unwrap()["totalRequests"], 2);
     }
 }
+
+pub mod extra;
