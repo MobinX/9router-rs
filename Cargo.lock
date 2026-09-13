@@ -918,6 +918,7 @@ dependencies = [
  "nine-oauth",
  "nine-providers",
  "nine-storage",
+ "reqwest",
  "rusqlite",
  "serde_json",
  "tokio",

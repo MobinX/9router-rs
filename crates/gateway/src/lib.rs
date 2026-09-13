@@ -16,6 +16,7 @@ use std::time::Duration;
 use tokio_stream::wrappers::ReceiverStream;
 
 mod mgmt;
+mod oauth_interactive;
 
 #[derive(Clone)]
 pub struct Upstream {
@@ -157,7 +158,10 @@ pub fn router_with_state(state: AppState) -> Router {
         .route("/v1beta/models/*path", post(gemini_generate))
         .route("/api/oauth/callback", get(oauth_callback))
         .route("/api/oauth/:provider", get(oauth_start))
-        .route("/api/oauth/:provider/:action", post(oauth_action))
+        .route(
+            "/api/oauth/:provider/:action",
+            get(oauth_interactive::oauth_get_action).post(oauth_action),
+        )
         .route("/api/models", get(models))
         .route("/api/providers", get(providers))
         .route("/api/usage/stats", get(usage_stats))
@@ -403,6 +407,7 @@ struct CallbackQuery {
 async fn oauth_callback(
     State(st): State<Arc<AppState>>,
     Query(q): Query<CallbackQuery>,
+    headers: HeaderMap,
 ) -> Response {
     let Some(state_val) = &q.state else {
         return err(
@@ -597,6 +602,14 @@ async fn oauth_callback(
         let key = state_val.clone();
         let _ = tokio::task::spawn_blocking(move || store2.kv_delete("oauth_state", &key)).await;
     }
+    if headers
+        .get("accept")
+        .and_then(|v| v.to_str().ok())
+        .map(|a| a.contains("text/html"))
+        .unwrap_or(false)
+    {
+        return oauth_interactive::browser_callback_html().into_response();
+    }
     (StatusCode::OK, Json(serde_json::json!({
         "ok": true,
         "provider": provider,
@@ -622,6 +635,10 @@ struct OAuthAction {
     access_token: Option<String>,
     #[serde(rename = "refreshToken")]
     refresh_token: Option<String>,
+    #[serde(rename = "deviceCode")]
+    device_code: Option<String>,
+    #[serde(rename = "extraData")]
+    extra_data: Option<std::collections::BTreeMap<String, String>>,
     #[serde(rename = "connectionId")]
     connection_id: Option<String>,
 }
@@ -676,6 +693,7 @@ async fn post_token_json(
 
 async fn oauth_action(
     State(st): State<Arc<AppState>>,
+    Query(query): Query<std::collections::HashMap<String, String>>,
     Path((provider, action)): Path<(String, String)>,
     Json(body): Json<OAuthAction>,
 ) -> Response {
@@ -981,6 +999,52 @@ async fn oauth_action(
                 Json(serde_json::json!({"ok":true,"connection":{"id":conn_id}})),
             )
                 .into_response()
+        }
+        "poll" => {
+            let poll_body = oauth_interactive::PollBody {
+                device_code: body.device_code.clone(),
+                device_code_snake: None,
+                state: body.state.clone(),
+                code_verifier: body.code_verifier.clone(),
+                code_verifier_snake: None,
+                extra_data: body.extra_data.clone(),
+
+                region: None,
+                start_url: None,
+                auth_method: None,
+            };
+            oauth_interactive::poll_action(State(st), Path(provider), Json(poll_body)).await
+        }
+        "register-session" => {
+            let reg = oauth_interactive::RegisterBody {
+                state: body.state.clone(),
+                code_verifier: body.code_verifier.clone(),
+            };
+            oauth_interactive::register_session_action(Path(provider), Query(query), Json(reg))
+                .await
+        }
+        "manual-code" => {
+            let manual = oauth_interactive::ManualCodeBody {
+                code: body.code.clone(),
+                state: body.state.clone(),
+            };
+            oauth_interactive::manual_code_action(State(st), Path(provider), Json(manual)).await
+        }
+        "start-proxy" => {
+            let v = oauth_interactive::start_proxy(&provider).await;
+            if v.get("error").is_some() {
+                return err(
+                    400,
+                    v["error"].as_str().unwrap_or("proxy unsupported"),
+                    "invalid_request_error",
+                    "proxy_unsupported",
+                );
+            }
+            (StatusCode::OK, Json(v)).into_response()
+        }
+        "stop-proxy" => {
+            oauth_interactive::stop_proxy(&provider);
+            (StatusCode::OK, Json(serde_json::json!({"success": true}))).into_response()
         }
         "auto-import" | "import" | "import-cli-proxy" | "social-authorize" | "social-exchange" => {
             // Stub: documented interactive flows requiring browser loopback/device polling.

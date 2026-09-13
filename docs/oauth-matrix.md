@@ -59,3 +59,37 @@ Endpoints implemented & tested:
 - `POST /api/oauth/:provider/api-key` — manual key connection
 - `POST /api/oauth/:provider/logout` — delete connection row
 - Interactive device-polling stays deferred (matrix `deferredOrUnsupported`), 501 by design.
+
+## Interactive browser/device OAuth (implemented)
+
+Mirrors `src/app/api/oauth/[provider]/[action]/route.js` + `cli/src/cli/menus/providers.js`:
+
+- `GET /api/oauth/:provider/authorize?redirect_uri=` (+ provider meta passthrough) —
+  returns `{state, authUrl, authorizeUrl, redirectUri, codeVerifier, codeChallenge,
+  flowType, fixedPort, callbackPath}`; 501 for `xiaomi-mimo` (X25519 crypto) and
+  `zed` (RSA flow) with import guidance, matching `start_unsupported_reason`.
+- `GET /api/oauth/:provider/device-code` (`start_url`/`region`/`auth_method` for kiro) —
+  per-provider request shapes: github form+Accept, grok-cli form+referrer/UA,
+  kimi form+`X-Msh-Device-Id`, kilocode JSON initiate, codebuddy state-POST,
+  qoder fully local (PKCE+nonce+machineId, no network), kiro OIDC register+authorize
+  with `valid_aws_region` SSRF guard. Mock overrides `NINE_DEVICE_MOCK_<PROV>_{CODE,TOKEN,REGISTER}` for offline tests.
+- `POST /api/oauth/:provider/poll` (`deviceCode`, `codeVerifier`, `extraData`) —
+  normalizes pending/slow_down/expired/denied/complete per provider
+  (kilocode 202/403/410, codebuddy `code` 11217/0, qoder 202/404, kiro camelCase,
+  kimi 200+`authorization_pending`); on success stores a `providerConnections` row
+  and returns `{ok, success, connection}` (both flags for CLI compat).
+- Loopback proxies: `GET|POST start-proxy` / `stop-proxy` for
+  codex (fixed 1455) / xai (fixed 56121) / trae / windsurf / zed / xiaomi-mimo —
+  real 127.0.0.1 listener, `Origin` non-loopback guard, upstream success page.
+- `POST register-session` (trae/windsurf/zed/xai), `GET poll-status?state=`,
+  `POST manual-code` (xai-only, exchanges with session verifier), `GET ide-status`
+  (trae/windsurf only, 400 otherwise).
+- Browser callback `GET /api/oauth/callback` serves the success HTML when
+  `Accept: text/html`, JSON otherwise.
+- CLI `9router-rs login <provider> [--device] [--gateway-url URL] [--no-browser]`:
+  authorize→print/open URL→paste callback→exchange, or device-code→print URL/code→
+  poll 5s×60. Pure helpers: `nine_oauth::device::{parse_callback_url,
+  qoder_challenge, normalize_poll, valid_aws_region}`, cli `poll_next`.
+
+Public installed-app client ids ship as defaults exactly as upstream publishes them;
+secrets stay env-only. No credentials in code or fixtures.

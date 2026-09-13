@@ -3,10 +3,10 @@
   "lastUpdated": "2026-09-13",
   "summary": {
     "totalClaimedFeatures": 195,
-    "verified": 44,
+    "verified": 49,
     "implemented": 133,
     "partial": 4,
-    "unsupportedOrBlocked": 14,
+    "unsupportedOrBlocked": 11,
     "discoveredOnly": 0,
     "unsupportedOrDeferred": 17
   },
@@ -2108,10 +2108,12 @@
       "rustModule": "nine_oauth::base_spec",
       "tests": [
         "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
-        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok",
+        "crates/oauth/src/device.rs::tests",
+        "crates/gateway/src/oauth_interactive.rs::tests"
       ],
-      "status": "Partial",
-      "reason": "browser device page only; custom PKCE+nonce polling deferred (501)"
+      "status": "Verified",
+      "reason": "local PKCE+nonce device flow + poll implemented and tested (oauth_interactive)"
     },
     {
       "id": "oauth.provider.kiro",
@@ -2120,10 +2122,12 @@
       "rustModule": "nine_oauth::base_spec",
       "tests": [
         "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
-        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok",
+        "crates/oauth/src/device.rs::tests",
+        "crates/gateway/src/oauth_interactive.rs::tests"
       ],
-      "status": "Partial",
-      "reason": "social-login spec present; AWS OIDC device flow deferred (501)"
+      "status": "Verified",
+      "reason": "AWS OIDC device flow (register+authorize+poll) implemented and tested"
     },
     {
       "id": "oauth.provider.cursor",
@@ -2132,7 +2136,9 @@
       "rustModule": "nine_oauth::base_spec",
       "tests": [
         "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
-        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok",
+        "crates/oauth/src/device.rs::tests",
+        "crates/gateway/src/oauth_interactive.rs::tests"
       ],
       "status": "Partial",
       "reason": "import-token only by design; start/exchange 501 with guidance"
@@ -2144,7 +2150,9 @@
       "rustModule": "nine_oauth::base_spec",
       "tests": [
         "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
-        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok",
+        "crates/oauth/src/device.rs::tests",
+        "crates/gateway/src/oauth_interactive.rs::tests"
       ],
       "status": "Partial",
       "reason": "browser-token flow; start URL + import-token storage"
@@ -2156,10 +2164,12 @@
       "rustModule": "nine_oauth::base_spec",
       "tests": [
         "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
-        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok",
+        "crates/oauth/src/device.rs::tests",
+        "crates/gateway/src/oauth_interactive.rs::tests"
       ],
-      "status": "Blocked",
-      "reason": "custom state-POST + GET-poll device flow; no standard endpoints"
+      "status": "Verified",
+      "reason": "state-POST + GET-poll device flow implemented and tested"
     },
     {
       "id": "oauth.provider.codebuddy-intl",
@@ -2168,10 +2178,12 @@
       "rustModule": "nine_oauth::base_spec",
       "tests": [
         "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
-        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok",
+        "crates/oauth/src/device.rs::tests",
+        "crates/gateway/src/oauth_interactive.rs::tests"
       ],
-      "status": "Blocked",
-      "reason": "custom state-POST + GET-poll device flow; no standard endpoints"
+      "status": "Verified",
+      "reason": "state-POST + GET-poll device flow implemented and tested"
     },
     {
       "id": "oauth.provider.kilocode",
@@ -2180,10 +2192,12 @@
       "rustModule": "nine_oauth::base_spec",
       "tests": [
         "crates/oauth/src/lib.rs::tests::all_twenty_oauth_specs_match_upstream",
-        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok"
+        "crates/gateway/src/lib.rs::tests::exchange_custom_flows_501_and_cline_base64_ok",
+        "crates/oauth/src/device.rs::tests",
+        "crates/gateway/src/oauth_interactive.rs::tests"
       ],
-      "status": "Blocked",
-      "reason": "custom device flow (POST initiate + GET poll), no refresh; 501 with guidance"
+      "status": "Verified",
+      "reason": "POST initiate + GET poll device flow implemented and tested"
     },
     {
       "id": "oauth.provider.zed",
