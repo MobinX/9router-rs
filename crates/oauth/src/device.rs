@@ -573,7 +573,7 @@ pub fn parse_callback_url(url: &str) -> Option<(String, String)> {
     Some((code?, state?))
 }
 
-fn urlencode(s: &str) -> String {
+pub fn urlencode(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for b in s.bytes() {
         match b {

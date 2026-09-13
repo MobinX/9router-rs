@@ -29,6 +29,9 @@ enum Cmd {
         provider: String,
         #[arg(long)]
         device: bool,
+        /// Loopback callback server (auto-capture) instead of pasting the callback URL.
+        #[arg(long)]
+        auto: bool,
         #[arg(long, default_value = "http://127.0.0.1:20128")]
         gateway_url: String,
         #[arg(long)]
@@ -220,6 +223,141 @@ async fn login(provider: &str, device: bool, gateway_url: &str, no_browser: bool
     println!("login ok: {done}");
 }
 
+/// Fixed loopback port + callback path per upstream (codex 1455 `/auth/callback`,
+/// xai 56121 `/callback`); everything else takes an ephemeral port.
+pub fn loopback_target(provider: &str) -> (u16, &'static str) {
+    match provider {
+        "codex" => (1455, "/auth/callback"),
+        "xai" => (56121, "/callback"),
+        _ => (0, "/callback"),
+    }
+}
+
+const SUCCESS_HTML: &str = r#"<!DOCTYPE html><html><head><meta charset="utf-8"><title>Authentication Successful</title></head><body style="font-family:system-ui;display:flex;justify-content:center;align-items:center;height:100vh"><div><h1>Authentication Successful</h1><p>You can close this tab.</p><script>setTimeout(()=>window.close(),3000)</script></div></body></html>"#;
+
+/// Wait for one loopback callback request and return `(code, state)`.
+async fn wait_for_callback(listener: tokio::net::TcpListener) -> Option<(String, String)> {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+    let deadline = std::time::Duration::from_secs(300);
+    let (mut sock, _) = tokio::time::timeout(deadline, listener.accept())
+        .await
+        .ok()?
+        .ok()?;
+    let mut reader = tokio::io::BufReader::new(&mut sock);
+    let mut target = String::new();
+    for i in 0..64 {
+        let mut line = String::new();
+        if reader.read_line(&mut line).await.unwrap_or(0) == 0 {
+            break;
+        }
+        let line = line.trim_end();
+        if i == 0 {
+            target = line.split_whitespace().nth(1).unwrap_or("").to_string();
+        }
+        if line.is_empty() {
+            break;
+        }
+    }
+    let body = SUCCESS_HTML.as_bytes();
+    let _ = reader
+        .get_mut()
+        .write_all(
+            format!(
+                "HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: {}
+Connection: close
+
+",
+                body.len()
+            )
+            .as_bytes(),
+        )
+        .await;
+    let _ = reader.get_mut().write_all(body).await;
+    let query = target.split_once('?').map(|(_, q)| q).unwrap_or("");
+    nine_oauth::device::parse_callback_url(&format!("http://127.0.0.1/?{query}"))
+}
+
+/// Loopback (auto-capture) login: bind, authorize with our redirect_uri, open the
+/// browser, capture the callback, then exchange. Mirrors upstream startLocalServer.
+async fn login_auto(provider: &str, gateway_url: &str, no_browser: bool) {
+    let gw = gateway_url.trim_end_matches('/');
+    let client = reqwest::Client::new();
+    let (fixed, path) = loopback_target(provider);
+    let listener = match tokio::net::TcpListener::bind(("127.0.0.1", fixed)).await {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("cannot bind 127.0.0.1:{fixed}: {e}");
+            std::process::exit(1);
+        }
+    };
+    let port = listener.local_addr().map(|a| a.port()).unwrap_or(fixed);
+    let redirect_uri = format!("http://127.0.0.1:{port}{path}");
+    let url = format!(
+        "{gw}/api/oauth/{provider}/authorize?redirect_uri={}",
+        nine_oauth::device::urlencode(&redirect_uri)
+    );
+    let auth: serde_json::Value = match client.get(&url).send().await {
+        Ok(r) => r.json().await.unwrap_or_default(),
+        Err(e) => {
+            eprintln!("authorize request failed: {e}");
+            std::process::exit(1);
+        }
+    };
+    let auth_url = auth
+        .get("authorizeUrl")
+        .or_else(|| auth.get("authUrl"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    if auth_url.is_empty() {
+        eprintln!(
+            "authorize failed: {}",
+            auth.get("error")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown error")
+        );
+        std::process::exit(1);
+    }
+    println!("Listening on {redirect_uri}");
+    println!("Open: {auth_url}");
+    if !no_browser {
+        open_browser(&auth_url);
+    }
+    let Some((code, state)) = wait_for_callback(listener).await else {
+        eprintln!("login timed out waiting for callback");
+        std::process::exit(1);
+    };
+    if code.is_empty() {
+        eprintln!("no code in callback");
+        std::process::exit(1);
+    }
+    let state = if state.is_empty() {
+        auth.get("state").cloned().unwrap_or_default()
+    } else {
+        serde_json::json!(state)
+    };
+    let done: serde_json::Value = match client
+        .post(format!("{gw}/api/oauth/{provider}/exchange"))
+        .json(&serde_json::json!({
+            "code": code,
+            "state": state,
+            "codeVerifier": auth.get("codeVerifier"),
+            "redirectUri": redirect_uri,
+        }))
+        .send()
+        .await
+    {
+        Ok(r) => r.json().await.unwrap_or_default(),
+        Err(e) => {
+            eprintln!("exchange failed: {e}");
+            std::process::exit(1);
+        }
+    };
+    println!("login ok: {done}");
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
@@ -229,17 +367,17 @@ async fn main() {
     if let Some(Cmd::Login {
         provider,
         device,
+        auto,
         gateway_url,
         no_browser,
     }) = &cli.cmd
     {
-        login(
-            provider,
-            *device,
-            gateway_url,
-            *no_browser || cli.no_browser,
-        )
-        .await;
+        let nb = *no_browser || cli.no_browser;
+        if *auto {
+            login_auto(provider, gateway_url, nb).await;
+        } else {
+            login(provider, *device, gateway_url, nb).await;
+        }
         return;
     }
     if matches!(cli.cmd, Some(Cmd::Version)) {
@@ -285,6 +423,15 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn loopback_targets_match_upstream() {
+        assert_eq!(loopback_target("codex"), (1455, "/auth/callback"));
+        assert_eq!(loopback_target("xai"), (56121, "/callback"));
+        assert_eq!(loopback_target("gemini-cli"), (0, "/callback"));
+        assert_eq!(loopback_target("antigravity"), (0, "/callback"));
+    }
+
     #[test]
     fn poll_outcome_routing() {
         assert_eq!(

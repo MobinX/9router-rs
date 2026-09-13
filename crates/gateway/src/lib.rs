@@ -639,6 +639,8 @@ struct OAuthAction {
     device_code: Option<String>,
     #[serde(rename = "extraData")]
     extra_data: Option<std::collections::BTreeMap<String, String>>,
+    #[serde(rename = "redirectUri")]
+    redirect_uri: Option<String>,
     #[serde(rename = "connectionId")]
     connection_id: Option<String>,
 }
@@ -741,9 +743,35 @@ async fn oauth_action(
             let token_json: Value = match (is_cline, cline_tokens) {
                 (true, Some(ct)) => nine_oauth::cline_token_value(&ct, now),
                 _ => {
-                    let redirect_uri = String::new();
-                    let pkce = body
-                        .code_verifier
+                    let mut redirect_uri = body.redirect_uri.clone().unwrap_or_default();
+                    let mut code_verifier = body.code_verifier.clone();
+                    if (code_verifier.is_none() || redirect_uri.is_empty()) && !is_cline {
+                        if let (Some(store), Some(state_key)) = (&st.store, body.state.clone()) {
+                            let store = store.clone();
+                            if let Ok(Ok(Some(text))) = tokio::task::spawn_blocking(move || {
+                                store.kv_get("oauth_state", &state_key)
+                            })
+                            .await
+                            {
+                                if let Ok(v) = serde_json::from_str::<Value>(&text) {
+                                    if code_verifier.is_none() {
+                                        code_verifier = v
+                                            .get("codeVerifier")
+                                            .and_then(|x| x.as_str())
+                                            .map(str::to_string);
+                                    }
+                                    if redirect_uri.is_empty() {
+                                        redirect_uri = v
+                                            .get("redirectUri")
+                                            .and_then(|x| x.as_str())
+                                            .unwrap_or_default()
+                                            .to_string();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    let pkce = code_verifier
                         .as_deref()
                         .map(nine_oauth::Pkce::from_verifier);
                     let (content_type, req_body) = if is_cline {

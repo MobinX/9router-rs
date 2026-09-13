@@ -391,6 +391,17 @@ pub fn load_specs(data_dir: &str) -> Vec<OAuthSpec> {
                 s.client_secret = Some(secret);
             }
         }
+        // Test/deployment override for the endpoints (offline mocks, proxies).
+        if let Ok(u) = std::env::var(format!("NINE_{suffix}_TOKEN_URL")) {
+            if !u.is_empty() {
+                s.token_url = u;
+            }
+        }
+        if let Ok(u) = std::env::var(format!("NINE_{suffix}_AUTHORIZE_URL")) {
+            if !u.is_empty() {
+                s.authorize_url = u;
+            }
+        }
     }
     specs
 }

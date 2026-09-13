@@ -1145,6 +1145,81 @@ mod tests {
         assert_eq!(s5, StatusCode::OK);
     }
 
+    /// Captured-request mock: returns 200 + canned JSON, records the request body.
+    async fn mock_capture(body: &'static str) -> (String, Arc<Mutex<String>>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let seen = Arc::new(Mutex::new(String::new()));
+        let seen2 = seen.clone();
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut sock, _)) = listener.accept().await else {
+                    return;
+                };
+                let seen2 = seen2.clone();
+                tokio::spawn(async move {
+                    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+                    let mut buf = vec![0u8; 65536];
+                    let n = sock.read(&mut buf).await.unwrap_or(0);
+                    let req = String::from_utf8_lossy(&buf[..n]).to_string();
+                    *seen2.lock().unwrap() = req;
+                    let resp = format!(
+                        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                        body.len()
+                    );
+                    let _ = sock.write_all(resp.as_bytes()).await;
+                });
+            }
+        });
+        (format!("http://{addr}"), seen)
+    }
+
+    #[tokio::test]
+    async fn exchange_uses_stored_verifier_and_redirect_uri() {
+        let (base, seen) = mock_capture(r#"{"access_token":"tok","expires_in":3600}"#).await;
+        std::env::set_var("NINE_CODEX_TOKEN_URL", format!("{base}/token"));
+        let store = Arc::new(nine_storage::Store::open_memory().unwrap());
+        let app = router_with_state(
+            AppState::new(Vec::new(), 5000)
+                .with_store(store)
+                .with_oauth_specs(nine_oauth::load_specs("/nonexistent-dir-xyz")),
+        );
+        let redirect = "http://127.0.0.1:1455/auth/callback";
+        let (s1, v1) = body_json(
+            app.clone(),
+            Request::get(format!(
+                "/api/oauth/codex/authorize?redirect_uri={redirect}"
+            ))
+            .body(Body::empty())
+            .unwrap(),
+        )
+        .await;
+        assert_eq!(s1, StatusCode::OK);
+        let state = v1["state"].as_str().unwrap().to_string();
+        // Exchange sends only code+state; verifier/redirect_uri come from /authorize.
+        let (s2, v2) = body_json(
+            app,
+            Request::post("/api/oauth/codex/exchange")
+                .header("content-type", "application/json")
+                .body(Body::from(format!(r#"{{"code":"abc","state":"{state}"}}"#)))
+                .unwrap(),
+        )
+        .await;
+        assert_eq!(s2, StatusCode::OK, "{v2}");
+        assert_eq!(v2["connection"]["provider"], "codex");
+        let req = seen.lock().unwrap().clone();
+        assert!(req.contains("redirect_uri="), "redirect_uri missing: {req}");
+        assert!(
+            req.contains("code_verifier="),
+            "code_verifier missing: {req}"
+        );
+        assert!(
+            req.contains("127.0.0.1%3A1455"),
+            "redirect_uri not the loopback one: {req}"
+        );
+        std::env::remove_var("NINE_CODEX_TOKEN_URL");
+    }
+
     #[tokio::test]
     async fn manual_code_and_ide_status_guards() {
         let (s, _) = body_json(
